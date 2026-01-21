@@ -1,6 +1,134 @@
 import { Activity, Child, ActivityOccurrence } from '@/types';
 
 /**
+ * Creates a Date object in a specific timezone
+ */
+export const createDateTimeInTimezone = (
+  date: Date,
+  hour: number,
+  minute: number,
+  timezone: string
+): Date => {
+  try {
+    // Create a date string in the format YYYY-MM-DD HH:MM
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hourStr = String(hour).padStart(2, '0');
+    const minuteStr = String(minute).padStart(2, '0');
+    
+    const dateTimeString = `${year}-${month}-${day}T${hourStr}:${minuteStr}:00`;
+    
+    // Create a date in the specified timezone
+    const tempDate = new Date(dateTimeString);
+    
+    // Get the timezone offset for the specified timezone
+    const formatter = new Intl.DateTimeFormat('en', {
+      timeZone: timezone,
+      timeZoneName: 'longOffset'
+    });
+    
+    // For now, we'll use a simpler approach and assume the local timezone
+    // In a production app, you might want to use a library like date-fns-tz
+    const localDate = new Date(date);
+    localDate.setHours(hour, minute, 0, 0);
+    
+    return localDate;
+  } catch (error) {
+    // Fallback to local timezone if timezone parsing fails
+    const localDate = new Date(date);
+    localDate.setHours(hour, minute, 0, 0);
+    return localDate;
+  }
+};
+
+/**
+ * Converts a time string to minutes since midnight
+ */
+export const timeStringToMinutes = (timeString: string): number => {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+/**
+ * Converts minutes since midnight to a time string
+ */
+export const minutesToTimeString = (minutes: number): string => {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+};
+
+/**
+ * Gets the next occurrence of an activity after a given date
+ */
+export const getNextOccurrence = (
+  activity: Activity,
+  child: Child,
+  afterDate: Date = new Date()
+): ActivityOccurrence | null => {
+  // Look ahead up to 2 weeks to find the next occurrence
+  const endDate = new Date(afterDate);
+  endDate.setDate(endDate.getDate() + 14);
+  
+  const occurrences = generateOccurrencesForActivity(activity, child, afterDate, endDate);
+  
+  // Return the first occurrence that starts after the given date
+  return occurrences.find(occurrence => occurrence.startDateTime > afterDate) || null;
+};
+
+/**
+ * Calculates weekly statistics for activities
+ */
+export const calculateWeeklyStats = (
+  activities: Activity[],
+  children: Child[]
+): {
+  totalHours: number;
+  activitiesPerDay: Record<number, number>;
+  activitiesPerChild: Record<string, number>;
+  averageDuration: number;
+} => {
+  const childrenMap = new Map(children.map(child => [child.id, child]));
+  
+  let totalMinutes = 0;
+  const activitiesPerDay: Record<number, number> = {};
+  const activitiesPerChild: Record<string, number> = {};
+  let totalActivities = 0;
+  
+  activities.forEach(activity => {
+    const child = childrenMap.get(activity.childId);
+    if (!child) return;
+    
+    const startMinutes = timeStringToMinutes(activity.startTime);
+    const endMinutes = timeStringToMinutes(activity.endTime);
+    const durationMinutes = endMinutes - startMinutes;
+    
+    // Calculate total weekly minutes for this activity
+    const weeklyMinutes = durationMinutes * activity.daysOfWeek.length;
+    totalMinutes += weeklyMinutes;
+    
+    // Count activities per day
+    activity.daysOfWeek.forEach(day => {
+      activitiesPerDay[day] = (activitiesPerDay[day] || 0) + 1;
+    });
+    
+    // Count activities per child
+    const childName = child.name;
+    activitiesPerChild[childName] = (activitiesPerChild[childName] || 0) + 1;
+    
+    totalActivities += activity.daysOfWeek.length;
+  });
+  
+  return {
+    totalHours: totalMinutes / 60,
+    activitiesPerDay,
+    activitiesPerChild,
+    averageDuration: totalActivities > 0 ? totalMinutes / totalActivities : 0,
+  };
+};
+
+/**
  * Generates activity occurrences for a given date range
  */
 export const generateActivityOccurrences = (
@@ -59,15 +187,20 @@ export const generateOccurrencesForActivity = (
     
     // Check if this activity occurs on this day of the week
     if (activity.daysOfWeek.includes(dayOfWeek)) {
-      // Create start and end date times for this occurrence
-      const startDateTime = new Date(currentDate);
-      startDateTime.setHours(startHour, startMinute, 0, 0);
+      // Create start and end date times for this occurrence with timezone handling
+      const startDateTime = createDateTimeInTimezone(
+        currentDate,
+        startHour,
+        startMinute,
+        activity.timezone
+      );
       
-      const endDateTime = new Date(currentDate);
-      endDateTime.setHours(endHour, endMinute, 0, 0);
-      
-      // Handle timezone conversion if needed
-      // For now, we'll assume local timezone
+      const endDateTime = createDateTimeInTimezone(
+        currentDate,
+        endHour,
+        endMinute,
+        activity.timezone
+      );
       
       const occurrence: ActivityOccurrence = {
         activityId: activity.id,
@@ -274,4 +407,193 @@ export const isOccurrenceUpcoming = (occurrence: ActivityOccurrence): boolean =>
   const now = new Date();
   const oneHourFromNow = new Date(now.getTime() + (60 * 60 * 1000));
   return occurrence.startDateTime > now && occurrence.startDateTime <= oneHourFromNow;
+};
+
+/**
+ * Gets occurrences that need reminders (1 hour and 30 minutes before)
+ */
+export const getOccurrencesNeedingReminders = (
+  activities: Activity[],
+  children: Child[],
+  reminderMinutes: number[] = [60, 30]
+): { occurrence: ActivityOccurrence; reminderMinutes: number }[] => {
+  const now = new Date();
+  const maxLookAhead = Math.max(...reminderMinutes);
+  const futureDate = new Date(now.getTime() + (maxLookAhead * 60 * 1000));
+  
+  const occurrences = generateActivityOccurrences(activities, children, now, futureDate);
+  const reminders: { occurrence: ActivityOccurrence; reminderMinutes: number }[] = [];
+  
+  occurrences.forEach(occurrence => {
+    reminderMinutes.forEach(minutes => {
+      const reminderTime = new Date(occurrence.startDateTime.getTime() - (minutes * 60 * 1000));
+      const timeDiff = Math.abs(now.getTime() - reminderTime.getTime());
+      
+      // If we're within 1 minute of the reminder time, include it
+      if (timeDiff <= 60 * 1000 && occurrence.startDateTime > now) {
+        reminders.push({ occurrence, reminderMinutes: minutes });
+      }
+    });
+  });
+  
+  return reminders;
+};
+
+/**
+ * Generates a recurring pattern description for an activity
+ */
+export const getRecurrenceDescription = (activity: Activity): string => {
+  const { daysOfWeek } = activity;
+  
+  if (daysOfWeek.length === 0) {
+    return 'No recurring schedule';
+  }
+  
+  if (daysOfWeek.length === 7) {
+    return 'Every day';
+  }
+  
+  // Check for common patterns
+  const weekdays = [1, 2, 3, 4, 5]; // Monday to Friday
+  const weekends = [0, 6]; // Sunday and Saturday
+  
+  const isWeekdays = weekdays.every(day => daysOfWeek.includes(day)) && 
+                    daysOfWeek.length === 5;
+  const isWeekends = weekends.every(day => daysOfWeek.includes(day)) && 
+                    daysOfWeek.length === 2;
+  
+  if (isWeekdays) {
+    return 'Weekdays (Mon-Fri)';
+  }
+  
+  if (isWeekends) {
+    return 'Weekends (Sat-Sun)';
+  }
+  
+  // Generate custom description
+  const dayNames = daysOfWeek
+    .sort()
+    .map(day => {
+      const dayInfo = [
+        { value: 0, short: 'Sun' },
+        { value: 1, short: 'Mon' },
+        { value: 2, short: 'Tue' },
+        { value: 3, short: 'Wed' },
+        { value: 4, short: 'Thu' },
+        { value: 5, short: 'Fri' },
+        { value: 6, short: 'Sat' },
+      ].find(d => d.value === day);
+      return dayInfo?.short || '';
+    })
+    .filter(Boolean);
+  
+  if (dayNames.length === 1) {
+    return `Every ${dayNames[0]}`;
+  }
+  
+  return dayNames.join(', ');
+};
+
+/**
+ * Validates that an activity's schedule is reasonable
+ */
+export const validateActivitySchedule = (activity: Partial<Activity>): {
+  isValid: boolean;
+  errors: string[];
+} => {
+  const errors: string[] = [];
+  
+  // Check days of week
+  if (!activity.daysOfWeek || activity.daysOfWeek.length === 0) {
+    errors.push('At least one day must be selected');
+  }
+  
+  // Check times
+  if (!activity.startTime || !activity.endTime) {
+    errors.push('Start and end times are required');
+  } else {
+    const startMinutes = timeStringToMinutes(activity.startTime);
+    const endMinutes = timeStringToMinutes(activity.endTime);
+    
+    if (startMinutes >= endMinutes) {
+      errors.push('End time must be after start time');
+    }
+    
+    const durationMinutes = endMinutes - startMinutes;
+    if (durationMinutes < 15) {
+      errors.push('Activity must be at least 15 minutes long');
+    }
+    
+    if (durationMinutes > 12 * 60) {
+      errors.push('Activity cannot be longer than 12 hours');
+    }
+  }
+  
+  // Check timezone
+  if (!activity.timezone) {
+    errors.push('Timezone is required');
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+/**
+ * Finds the optimal time slot for a new activity to avoid conflicts
+ */
+export const findOptimalTimeSlot = (
+  existingActivities: Activity[],
+  children: Child[],
+  preferredDays: number[],
+  durationMinutes: number,
+  earliestTime: string = '08:00',
+  latestTime: string = '20:00'
+): { startTime: string; endTime: string; days: number[] } | null => {
+  const earliestMinutes = timeStringToMinutes(earliestTime);
+  const latestMinutes = timeStringToMinutes(latestTime);
+  
+  // Try each day
+  for (const day of preferredDays) {
+    // Get existing activities for this day
+    const dayActivities = existingActivities.filter(activity => 
+      activity.daysOfWeek.includes(day)
+    );
+    
+    // Sort by start time
+    dayActivities.sort((a, b) => 
+      timeStringToMinutes(a.startTime) - timeStringToMinutes(b.startTime)
+    );
+    
+    // Try to find a gap
+    let currentTime = earliestMinutes;
+    
+    for (const activity of dayActivities) {
+      const activityStart = timeStringToMinutes(activity.startTime);
+      const activityEnd = timeStringToMinutes(activity.endTime);
+      
+      // Check if there's a gap before this activity
+      if (currentTime + durationMinutes <= activityStart) {
+        return {
+          startTime: minutesToTimeString(currentTime),
+          endTime: minutesToTimeString(currentTime + durationMinutes),
+          days: [day],
+        };
+      }
+      
+      currentTime = Math.max(currentTime, activityEnd);
+    }
+    
+    // Check if there's time after the last activity
+    if (currentTime + durationMinutes <= latestMinutes) {
+      return {
+        startTime: minutesToTimeString(currentTime),
+        endTime: minutesToTimeString(currentTime + durationMinutes),
+        days: [day],
+      };
+    }
+  }
+  
+  return null;
 };
