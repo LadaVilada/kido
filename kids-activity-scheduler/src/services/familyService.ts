@@ -12,7 +12,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Family, FamilyMember } from '@/types';
+import { Family, FamilyMember, PendingInvitation } from '@/types';
 
 export class FamilyService {
   /**
@@ -76,6 +76,139 @@ export class FamilyService {
     }
 
     return this.getFamily(userDoc.data().familyId);
+  }
+
+  /**
+   * Send invitation to join family by email
+   */
+  static async inviteFamilyMember(
+    familyId: string,
+    email: string,
+    role: 'parent' | 'caregiver' = 'parent'
+  ): Promise<string> {
+    const family = await this.getFamily(familyId);
+    
+    if (!family) {
+      throw new Error('Family not found');
+    }
+
+    // Check if already a member
+    const isAlreadyMember = family.members.some(m => m.email.toLowerCase() === email.toLowerCase());
+    if (isAlreadyMember) {
+      throw new Error('This user is already a family member');
+    }
+
+    // Check if already invited
+    const existingInvitation = family.pendingInvitations?.find(
+      inv => inv.email.toLowerCase() === email.toLowerCase()
+    );
+    if (existingInvitation) {
+      throw new Error('An invitation has already been sent to this email');
+    }
+
+    // Generate unique invitation token
+    const token = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    const invitation: Omit<PendingInvitation, 'invitedBy'> & { invitedBy: string } = {
+      email: email.toLowerCase(),
+      invitedBy: '', // Will be set by the caller
+      invitedAt: Timestamp.now(),
+      role,
+      token,
+    };
+
+    // Add invitation to family
+    await updateDoc(doc(db, 'families', familyId), {
+      pendingInvitations: arrayUnion(invitation),
+    });
+
+    // Return the invitation link
+    const appUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+    return `${appUrl}/?invite=${token}`;
+  }
+
+  /**
+   * Accept family invitation
+   */
+  static async acceptInvitation(
+    token: string,
+    userId: string,
+    userEmail: string
+  ): Promise<string> {
+    // Find family with this invitation token
+    const familiesRef = collection(db, 'families');
+    const snapshot = await getDocs(familiesRef);
+    
+    let targetFamily: Family | null = null;
+    let invitation: PendingInvitation | null = null;
+
+    for (const doc of snapshot.docs) {
+      const family = { id: doc.id, ...doc.data() } as Family;
+      const inv = family.pendingInvitations?.find(i => i.token === token);
+      
+      if (inv && inv.email.toLowerCase() === userEmail.toLowerCase()) {
+        targetFamily = family;
+        invitation = inv;
+        break;
+      }
+    }
+
+    if (!targetFamily || !invitation) {
+      throw new Error('Invalid or expired invitation');
+    }
+
+    // Check if user is already in a family
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (userDoc.exists() && userDoc.data().familyId) {
+      throw new Error('You are already part of another family');
+    }
+
+    // Add user as family member
+    const newMember: FamilyMember = {
+      userId,
+      email: userEmail,
+      role: invitation.role,
+      joinedAt: Timestamp.now(),
+    };
+
+    // Update family: add member and remove invitation
+    await updateDoc(doc(db, 'families', targetFamily.id), {
+      members: arrayUnion(newMember),
+      pendingInvitations: arrayRemove(invitation),
+    });
+
+    // Update user's familyId
+    await updateDoc(doc(db, 'users', userId), {
+      familyId: targetFamily.id,
+    });
+
+    return targetFamily.id;
+  }
+
+  /**
+   * Cancel pending invitation
+   */
+  static async cancelInvitation(
+    familyId: string,
+    email: string
+  ): Promise<void> {
+    const family = await this.getFamily(familyId);
+    
+    if (!family) {
+      throw new Error('Family not found');
+    }
+
+    const invitation = family.pendingInvitations?.find(
+      inv => inv.email.toLowerCase() === email.toLowerCase()
+    );
+
+    if (!invitation) {
+      throw new Error('Invitation not found');
+    }
+
+    await updateDoc(doc(db, 'families', familyId), {
+      pendingInvitations: arrayRemove(invitation),
+    });
   }
 
   /**

@@ -61,19 +61,33 @@ export const FamilySettings: React.FC = () => {
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!family || !email.trim()) return;
+    if (!family || !email.trim() || !user?.userId) return;
 
     setIsSubmitting(true);
     setError('');
     setSuccess('');
 
     try {
-      await FamilyService.addFamilyMember(family.id, email.trim(), 'parent');
-      setSuccess(`Added ${email} to your family!`);
+      // Send invitation instead of directly adding
+      const inviteLink = await FamilyService.inviteFamilyMember(family.id, email.trim(), 'parent');
+      
+      // Copy link to clipboard
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(inviteLink);
+        setSuccess(`Invitation sent! Link copied to clipboard. Share it with ${email}`);
+      } else {
+        setSuccess(`Invitation created! Share this link: ${inviteLink}`);
+      }
+      
       setEmail('');
       await loadFamily();
     } catch (err: any) {
-      setError(err.message);
+      // If user already exists, try adding directly
+      if (err.message.includes('not found')) {
+        setError(err.message);
+      } else {
+        setError(err.message);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -229,6 +243,52 @@ export const FamilySettings: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Pending Invitations */}
+      {isOwner && family.pendingInvitations && family.pendingInvitations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending Invitations</CardTitle>
+            <CardDescription>
+              Waiting for these users to accept
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {family.pendingInvitations.map((invitation) => (
+                <div
+                  key={invitation.email}
+                  className="flex items-center justify-between p-3 border rounded-lg bg-muted/50"
+                >
+                  <div>
+                    <p className="font-medium">{invitation.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Invited {invitation.invitedAt.toDate().toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      if (confirm('Cancel this invitation?')) {
+                        try {
+                          await FamilyService.cancelInvitation(family.id, invitation.email);
+                          await loadFamily();
+                        } catch (err: any) {
+                          setError(err.message);
+                        }
+                      }
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

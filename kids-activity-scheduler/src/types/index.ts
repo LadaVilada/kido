@@ -6,6 +6,7 @@ export interface Family {
   name: string;
   createdBy: string;
   members: FamilyMember[];
+  pendingInvitations?: PendingInvitation[]; // New field
   createdAt: Timestamp;
 }
 
@@ -14,6 +15,14 @@ export interface FamilyMember {
   email: string;
   role: 'owner' | 'parent' | 'caregiver';
   joinedAt: Timestamp;
+}
+
+export interface PendingInvitation {
+  email: string;
+  invitedBy: string;
+  invitedAt: Timestamp;
+  role: 'parent' | 'caregiver';
+  token: string; // Unique token for the invitation link
 }
 
 // User types

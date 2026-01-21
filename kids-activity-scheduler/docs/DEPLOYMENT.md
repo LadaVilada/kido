@@ -290,12 +290,16 @@ Before going live:
 ### Testing Security Rules
 
 Test these scenarios before deployment:
-1. User can only access their own user document
-2. User can read/write to their family document
-3. User can read/write children in their family
-4. User can read/write activities in their family
-5. User cannot access other families' data
-6. Only family creator can delete the family
+1. User can only access their own user document for write operations
+2. User can read other user documents (needed for family invitations)
+3. User can read/write to their family document
+4. User can read/write children in their family
+5. User can read/write activities in their family
+6. User cannot access other families' data
+7. Only family creator can delete the family
+8. Family owner can add members by updating their `familyId`
+9. Cannot add user to family if they already belong to another family
+10. Can remove user from family by setting `familyId` to null
 
 ## Part 7: Performance Optimization
 

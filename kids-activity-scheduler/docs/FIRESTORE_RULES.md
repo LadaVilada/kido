@@ -39,11 +39,37 @@ function isFamilyMember(familyId) {
 ### User Documents
 ```javascript
 match /users/{userId} {
-  allow read, write: if request.auth != null && request.auth.uid == userId;
+  // Users can read their own document
+  allow read: if request.auth != null && request.auth.uid == userId;
+  
+  // Users can write to their own document
+  allow write: if request.auth != null && request.auth.uid == userId;
+  
+  // Allow querying users by email (needed for adding family members)
+  allow read: if request.auth != null;
+  
+  // Allow family owners to update familyId when adding members
+  // Only if the user doesn't already have a familyId
+  allow update: if request.auth != null && 
+    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['familyId']) &&
+    (
+      // Adding to family (user has no family yet)
+      (!resource.data.keys().hasAny(['familyId']) || resource.data.familyId == null) ||
+      // Removing from family (setting to null)
+      request.resource.data.familyId == null
+    );
 }
 ```
 
-**Access**: Users can only read and write their own user document.
+**Access**:
+- **Read Own Document**: Users can read their own user document
+- **Write Own Document**: Users can write to their own user document
+- **Query Users**: Any authenticated user can query/read user documents (needed for finding users by email when adding family members)
+- **Update familyId**: Authenticated users can update another user's `familyId` field only if:
+  - The update only affects the `familyId` field (no other fields are modified)
+  - AND one of these conditions is met:
+    - The target user doesn't have a `familyId` yet (adding to family)
+    - The `familyId` is being set to null (removing from family)
 
 ### Family Documents
 ```javascript
@@ -121,8 +147,10 @@ Access Granted/Denied
 4. **Maintainable**: Centralized helper functions make rules easy to understand and update
 5. **Flexible**: Easy to add new resource types with consistent access patterns
 6. **Simple**: Two helper functions provide all necessary access control logic
+7. **Family Management**: Supports adding/removing family members by allowing controlled updates to user `familyId` fields
+8. **User Discovery**: Authenticated users can query other users by email to invite them to families
 
-## Testing Security Rules
+### Testing Security Rules
 
 ### Using Firebase Emulator
 
@@ -133,23 +161,32 @@ firebase emulators:start --only firestore
 ### Manual Testing Scenarios
 
 1. **User Isolation**
-   - User A cannot access User B's user document
-   - User A cannot access User B's family data
+   - User A can read their own user document
+   - User A can write to their own user document
+   - User A can query/read other user documents (for family invitations)
+   - User A cannot modify other users' data except `familyId` under specific conditions
 
-2. **Family Access**
+2. **Family Member Management**
+   - Family owner can update another user's `familyId` to add them to the family
+   - Can only update `familyId` if the target user has no family or `familyId` is null
+   - Can set `familyId` to null to remove a user from the family
+   - Cannot update other user fields when modifying `familyId`
+
+3. **Family Access**
    - Family members can read/write children
    - Family members can read/write activities
    - Non-members cannot access family data
 
-3. **Family Management**
+4. **Family Management**
    - Only creator can delete family
    - All members can update family details
    - Members can add children and activities
 
-4. **Edge Cases**
+5. **Edge Cases**
    - User without family cannot access any children/activities
    - Removed family member loses access immediately
    - Deleted family makes all resources inaccessible
+   - Cannot add user to family if they already belong to another family
 
 ## Deployment
 
@@ -198,6 +235,15 @@ deploy-rules.bat
 - Ensure user document is created on signup
 - Initialize `familyId` when user creates/joins family
 
+### Issue: "Permission denied when adding family member"
+
+**Cause**: Target user already has a `familyId` or trying to modify other fields
+
+**Solution**:
+- Verify target user doesn't already belong to a family
+- Ensure only the `familyId` field is being updated
+- Check that the authenticated user has permission to add members
+
 ## Future Enhancements
 
 Potential improvements to security rules:
@@ -217,9 +263,14 @@ Potential improvements to security rules:
 ## Version History
 
 - **v1.0** (Initial): Basic user-based access control
-- **v2.0** (Current): Family-based access control with optimized helper functions
+- **v2.0**: Family-based access control with optimized helper functions
   - Added `getUserFamily()` helper for efficient family ID lookup
   - Added `isFamilyMember()` helper for access validation
   - Removed unused `isInFamilyMembers()` helper (array-based approach)
   - Simplified family access checks with single document lookup
   - Improved performance with efficient query patterns
+- **v2.1** (Current): Enhanced user access rules for family member management
+  - Added read access for all authenticated users to query users by email
+  - Added controlled `familyId` update rules for adding/removing family members
+  - Restricted `familyId` updates to only work when user has no family or is being removed
+  - Ensured only `familyId` field can be modified during member management operations

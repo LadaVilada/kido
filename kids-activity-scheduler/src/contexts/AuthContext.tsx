@@ -48,6 +48,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Initialize user document with notification settings
         try {
           await initializeUserDocument(user.uid, user.email);
+          
+          // Check for invitation token in URL
+          if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const inviteToken = params.get('invite');
+            
+            if (inviteToken) {
+              try {
+                const { FamilyService } = await import('@/services/familyService');
+                await FamilyService.acceptInvitation(inviteToken, user.uid, user.email);
+                
+                // Remove invite param from URL
+                window.history.replaceState({}, '', window.location.pathname);
+                
+                console.log('Successfully joined family via invitation!');
+              } catch (error) {
+                console.error('Error accepting invitation:', error);
+              }
+            }
+          }
         } catch (error) {
           console.error('Error initializing user document:', error);
         }
