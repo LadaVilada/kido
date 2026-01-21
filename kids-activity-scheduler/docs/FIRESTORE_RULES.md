@@ -90,8 +90,10 @@ match /families/{familyId} {
 **Access**:
 - **Read**: Family creator OR any family member
 - **Create**: Any authenticated user (becomes creator)
-- **Update**: Family creator OR any family member
+- **Update**: Family creator OR any family member (for managing members, invitations, and family details)
 - **Delete**: Only the family creator
+
+**Note**: The `pendingInvitations` field is optional and stores invitation details including email, invited by user ID, timestamp, role, and a unique token for the invitation link.
 
 ### Children Documents
 ```javascript

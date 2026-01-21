@@ -5,6 +5,7 @@ A Progressive Web Application (PWA) that enables parents to efficiently manage t
 ## Features
 
 - 🔐 Secure authentication with Firebase Auth (email/password + Google OAuth)
+- 👨‍👩‍👧‍👦 Family groups with email invitations for co-parents and caregivers
 - 👶 Child profile management with color coding
 - 📅 Weekly calendar view for activity scheduling
 - 🔔 Push notifications for activity reminders

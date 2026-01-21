@@ -300,6 +300,9 @@ Test these scenarios before deployment:
 8. Family owner can add members by updating their `familyId`
 9. Cannot add user to family if they already belong to another family
 10. Can remove user from family by setting `familyId` to null
+11. Family owner can manage pending invitations
+12. Invitation tokens are unique and secure
+13. Expired invitations can be cleaned up
 
 ## Part 7: Performance Optimization
 

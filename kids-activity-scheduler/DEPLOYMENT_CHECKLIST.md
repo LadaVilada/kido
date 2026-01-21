@@ -22,12 +22,13 @@ Use this checklist to ensure a smooth deployment to production.
 - [ ] Cloud Functions deployed
 - [ ] Firebase authorized domains configured
 
-**Note**: The Firestore security rules have been updated to support family member management. The latest rules (v2.1) include:
+**Note**: The Firestore security rules have been updated to support family member management and pending invitations. The latest rules (v2.1) include:
 - Enhanced user access rules allowing authenticated users to query other users by email
 - Controlled `familyId` update permissions for adding/removing family members
 - Restrictions ensuring users can only be added to families if they don't already belong to one
+- Support for `pendingInvitations` array in family documents for email invitation system
 
-Ensure you deploy the latest rules before testing family features.
+Ensure you deploy the latest rules before testing family features and invitation system.
 
 ### Environment Configuration
 - [ ] `.env.production` created with production values
@@ -73,6 +74,13 @@ Ensure you deploy the latest rules before testing family features.
 - [ ] Can create activities
 - [ ] Can edit activities
 - [ ] Can delete activities
+- [ ] Can create family
+- [ ] Can send family invitations
+- [ ] Can accept family invitations
+- [ ] Can view pending invitations
+- [ ] Can cancel pending invitations
+- [ ] Can add family members directly
+- [ ] Can remove family members
 - [ ] Calendar displays correctly
 - [ ] Week navigation works
 - [ ] Day view works (if implemented)
