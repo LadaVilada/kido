@@ -1,9 +1,26 @@
 import { Timestamp } from 'firebase/firestore';
 
+// Family types
+export interface Family {
+  id: string;
+  name: string;
+  createdBy: string;
+  members: FamilyMember[];
+  createdAt: Timestamp;
+}
+
+export interface FamilyMember {
+  userId: string;
+  email: string;
+  role: 'owner' | 'parent' | 'caregiver';
+  joinedAt: Timestamp;
+}
+
 // User types
 export interface User {
   userId: string;
   email: string;
+  familyId?: string; // Reference to family
   createdAt: Timestamp;
   notificationSettings: {
     oneHour: boolean;
@@ -15,8 +32,7 @@ export interface User {
 // Child types
 export interface Child {
   id: string;
-  userId: string; // Primary owner
-  sharedWith?: string[]; // Array of user IDs who have access
+  familyId: string; // Changed from userId to familyId
   name: string;
   color: string;
   createdAt: Timestamp;
@@ -37,8 +53,7 @@ export interface UpdateChildInput {
 // Activity types
 export interface Activity {
   id: string;
-  userId: string; // Primary owner
-  sharedWith?: string[]; // Array of user IDs who have access
+  familyId: string; // Changed from userId to familyId
   childId: string;
   title: string;
   location: string;

@@ -1,17 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if user has access (owner or shared)
-    function hasAccess(resource) {
-      return request.auth != null && (
-        request.auth.uid == resource.data.userId ||
-        (resource.data.sharedWith != null && request.auth.uid in resource.data.sharedWith)
-      );
+    // Helper function to get user's family ID
+    function getUserFamily() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyId;
     }
     
-    // Helper function to check if user can create (must be owner)
-    function canCreate(resource) {
-      return request.auth != null && request.auth.uid == resource.data.userId;
+    // Helper function to check if user is family member
+    function isFamilyMember(familyId) {
+      return request.auth != null && getUserFamily() == familyId;
     }
     
     // Users can only access their own user document
@@ -19,18 +16,30 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
-    // Users can access children they own or that are shared with them
-    match /children/{childId} {
-      allow read: if hasAccess(resource);
-      allow update, delete: if hasAccess(resource);
-      allow create: if canCreate(request.resource);
+    // Family documents
+    match /families/{familyId} {
+      allow read: if request.auth != null && (
+        resource.data.createdBy == request.auth.uid ||
+        request.auth.uid in resource.data.members[].userId
+      );
+      allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
+      allow update: if request.auth != null && (
+        resource.data.createdBy == request.auth.uid ||
+        request.auth.uid in resource.data.members[].userId
+      );
+      allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
     
-    // Users can access activities they own or that are shared with them
+    // Children - accessible by all family members
+    match /children/{childId} {
+      allow read, write: if request.auth != null && isFamilyMember(resource.data.familyId);
+      allow create: if request.auth != null && isFamilyMember(request.resource.data.familyId);
+    }
+    
+    // Activities - accessible by all family members
     match /activities/{activityId} {
-      allow read: if hasAccess(resource);
-      allow update, delete: if hasAccess(resource);
-      allow create: if canCreate(request.resource);
+      allow read, write: if request.auth != null && isFamilyMember(resource.data.familyId);
+      allow create: if request.auth != null && isFamilyMember(request.resource.data.familyId);
     }
     
     // Deny all other access
