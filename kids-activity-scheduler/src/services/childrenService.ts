@@ -238,8 +238,14 @@ export class ChildrenService {
         .filter(child => child.id !== excludeChildId)
         .map(child => child.color);
       
-      return CHILD_COLORS.filter(color => !usedColors.includes(color));
+      const availableColors = CHILD_COLORS.filter(color => !usedColors.includes(color));
+      
+      // If no colors are available, return all colors (shouldn't happen with 12 colors)
+      // This ensures first child can always be created
+      return availableColors.length > 0 ? availableColors : [...CHILD_COLORS];
     } catch (error) {
+      // On error, return all colors so user can still create children
+      console.error('Error getting available colors:', error);
       const { CHILD_COLORS } = await import('@/types');
       return [...CHILD_COLORS];
     }
