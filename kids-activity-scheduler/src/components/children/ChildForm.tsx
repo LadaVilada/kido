@@ -5,7 +5,8 @@ import { Child, CreateChildInput, UpdateChildInput, CHILD_COLORS } from '@/types
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { X } from 'lucide-react';
+import { X, Check } from 'lucide-react';
+import { getColorName } from '@/lib/colorUtils';
 
 interface ChildFormProps {
   child?: Child; // If provided, form is in edit mode
@@ -93,11 +94,11 @@ export const ChildForm: React.FC<ChildFormProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b">
+          <h2 className="text-lg sm:text-xl font-semibold">
             {isEditMode ? 'Edit Child' : 'Add New Child'}
           </h2>
           <Button
@@ -105,16 +106,18 @@ export const ChildForm: React.FC<ChildFormProps> = ({
             size="icon"
             onClick={onCancel}
             disabled={isSubmitting}
+            className="touch-target"
+            aria-label="Close"
           >
             <X className="w-4 h-4" />
           </Button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Name field */}
           <div className="space-y-2">
-            <Label htmlFor="child-name">Child Name</Label>
+            <Label htmlFor="child-name" className="text-sm sm:text-base">Child Name</Label>
             <Input
               id="child-name"
               type="text"
@@ -122,41 +125,58 @@ export const ChildForm: React.FC<ChildFormProps> = ({
               onChange={handleNameChange}
               placeholder="Enter child's name"
               disabled={isSubmitting}
-              className={errors.name ? 'border-red-500' : ''}
+              className={`touch-target ${errors.name ? 'border-red-500' : ''}`}
             />
             {errors.name && (
-              <p className="text-sm text-red-600">{errors.name}</p>
+              <p className="text-xs sm:text-sm text-red-600">{errors.name}</p>
             )}
           </div>
 
           {/* Color selection */}
           <div className="space-y-3">
-            <Label>Color</Label>
-            <div className="grid grid-cols-6 gap-3">
-              {colorOptions.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => handleColorSelect(color)}
-                  disabled={isSubmitting}
-                  className={`
-                    w-10 h-10 rounded-full border-2 transition-all
-                    ${selectedColor === color 
-                      ? 'border-gray-800 scale-110' 
-                      : 'border-gray-300 hover:border-gray-500'
-                    }
-                    ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                  `}
-                  style={{ backgroundColor: color }}
-                  title={color}
-                />
-              ))}
+            <Label className="text-sm sm:text-base">Color</Label>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 sm:gap-3">
+              {colorOptions.map((color) => {
+                const isSelected = selectedColor === color;
+                const colorName = getColorName(color);
+                
+                return (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => handleColorSelect(color)}
+                    disabled={isSubmitting}
+                    className={`
+                      relative w-full aspect-square rounded-lg border-2 transition-all touch-target
+                      ${isSelected 
+                        ? 'border-gray-800 scale-105 ring-2 ring-gray-400 ring-offset-2' 
+                        : 'border-gray-300 hover:border-gray-500 hover:scale-105'
+                      }
+                      ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
+                    `}
+                    style={{ backgroundColor: color }}
+                    title={colorName}
+                    aria-label={`Select ${colorName} color`}
+                  >
+                    {isSelected && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Check className="w-5 h-5 sm:w-6 sm:h-6 text-white drop-shadow-lg" strokeWidth={3} />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
+            {selectedColor && (
+              <p className="text-xs sm:text-sm text-gray-600">
+                Selected: <span className="font-medium">{getColorName(selectedColor)}</span>
+              </p>
+            )}
             {errors.color && (
-              <p className="text-sm text-red-600">{errors.color}</p>
+              <p className="text-xs sm:text-sm text-red-600">{errors.color}</p>
             )}
             {colorOptions.length === 0 && (
-              <p className="text-sm text-amber-600">
+              <p className="text-xs sm:text-sm text-amber-600">
                 All colors are currently in use. You may need to delete a child first.
               </p>
             )}
@@ -165,25 +185,25 @@ export const ChildForm: React.FC<ChildFormProps> = ({
           {/* Submit error */}
           {errors.submit && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-600">{errors.submit}</p>
+              <p className="text-xs sm:text-sm text-red-600">{errors.submit}</p>
             </div>
           )}
 
           {/* Action buttons */}
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button
               type="button"
               variant="outline"
               onClick={onCancel}
               disabled={isSubmitting}
-              className="flex-1"
+              className="flex-1 touch-target"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting || colorOptions.length === 0}
-              className="flex-1"
+              className="flex-1 touch-target"
             >
               {isSubmitting 
                 ? (isEditMode ? 'Updating...' : 'Adding...') 

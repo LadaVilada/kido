@@ -4,6 +4,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { IOSInstallPrompt } from "@/components/pwa/IOSInstallPrompt";
 import { ConnectionStatus } from "@/components/common/ConnectionStatus";
+import { NotificationPrompt } from "@/components/notifications/NotificationPrompt";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -78,6 +79,7 @@ export default function RootLayout({
           {children}
           <InstallPrompt />
           <IOSInstallPrompt />
+          <NotificationPrompt />
         </AuthProvider>
       </body>
     </html>

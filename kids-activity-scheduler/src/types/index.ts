@@ -9,6 +9,7 @@ export interface User {
     oneHour: boolean;
     thirtyMinutes: boolean;
   };
+  fcmTokens?: string[];
 }
 
 // Child types

@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getTimezoneOptions, getUserTimezone } from '@/lib/dateTimeUtils';
+import { getContrastingTextHex, getHoverVariant } from '@/lib/colorUtils';
 
 interface ActivityFormProps {
   children: Child[];
@@ -210,22 +211,49 @@ export const ActivityForm: React.FC<ActivityFormProps> = ({
     return child?.color || '#3b82f6';
   };
 
+  const getButtonStyles = () => {
+    if (!formData.childId) return {};
+    
+    const color = getChildColor(formData.childId);
+    const textColor = getContrastingTextHex(color);
+    const hoverColor = getHoverVariant(color);
+    
+    return {
+      backgroundColor: color,
+      color: textColor,
+      borderColor: color,
+    };
+  };
+
+  const getButtonHoverStyles = () => {
+    if (!formData.childId) return {};
+    
+    const color = getChildColor(formData.childId);
+    const hoverColor = getHoverVariant(color);
+    const textColor = getContrastingTextHex(hoverColor);
+    
+    return {
+      backgroundColor: hoverColor,
+      color: textColor,
+    };
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
       {errors.general && (
-        <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+        <div className="p-3 text-xs sm:text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
           {errors.general}
         </div>
       )}
 
       {/* Child Selection */}
       <div className="space-y-2">
-        <Label htmlFor="childId">Child *</Label>
+        <Label htmlFor="childId" className="text-sm sm:text-base">Child *</Label>
         <Select
           value={formData.childId}
           onValueChange={(value) => handleInputChange('childId', value)}
         >
-          <SelectTrigger className={errors.childId ? 'border-red-500' : ''}>
+          <SelectTrigger className={`touch-target ${errors.childId ? 'border-red-500' : ''}`}>
             <SelectValue placeholder="Select a child" />
           </SelectTrigger>
           <SelectContent>
@@ -243,58 +271,59 @@ export const ActivityForm: React.FC<ActivityFormProps> = ({
           </SelectContent>
         </Select>
         {errors.childId && (
-          <p className="text-sm text-red-600">{errors.childId}</p>
+          <p className="text-xs sm:text-sm text-red-600">{errors.childId}</p>
         )}
       </div>
 
       {/* Activity Title */}
       <div className="space-y-2">
-        <Label htmlFor="title">Activity Title *</Label>
+        <Label htmlFor="title" className="text-sm sm:text-base">Activity Title *</Label>
         <Input
           id="title"
           type="text"
           value={formData.title}
           onChange={(e) => handleInputChange('title', e.target.value)}
           placeholder="e.g., Soccer Practice, Piano Lesson"
-          className={errors.title ? 'border-red-500' : ''}
+          className={`touch-target ${errors.title ? 'border-red-500' : ''}`}
           maxLength={100}
         />
         {errors.title && (
-          <p className="text-sm text-red-600">{errors.title}</p>
+          <p className="text-xs sm:text-sm text-red-600">{errors.title}</p>
         )}
       </div>
 
       {/* Location */}
       <div className="space-y-2">
-        <Label htmlFor="location">Location *</Label>
+        <Label htmlFor="location" className="text-sm sm:text-base">Location *</Label>
         <Input
           id="location"
           type="text"
           value={formData.location}
           onChange={(e) => handleInputChange('location', e.target.value)}
           placeholder="e.g., Community Center, 123 Main St"
-          className={errors.location ? 'border-red-500' : ''}
+          className={`touch-target ${errors.location ? 'border-red-500' : ''}`}
           maxLength={200}
         />
         {errors.location && (
-          <p className="text-sm text-red-600">{errors.location}</p>
+          <p className="text-xs sm:text-sm text-red-600">{errors.location}</p>
         )}
       </div>
 
       {/* Days of Week */}
       <div className="space-y-3">
-        <Label>Days of Week *</Label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Label className="text-sm sm:text-base">Days of Week *</Label>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           {DAYS_OF_WEEK.map((day) => (
-            <div key={day.value} className="flex items-center space-x-2">
+            <div key={day.value} className="flex items-center space-x-2 touch-target">
               <Checkbox
                 id={`day-${day.value}`}
                 checked={formData.daysOfWeek.includes(day.value)}
                 onCheckedChange={() => handleDayToggle(day.value)}
+                className="touch-target"
               />
               <Label 
                 htmlFor={`day-${day.value}`}
-                className="text-sm font-normal cursor-pointer"
+                className="text-xs sm:text-sm font-normal cursor-pointer"
               >
                 {day.label}
               </Label>
@@ -302,49 +331,49 @@ export const ActivityForm: React.FC<ActivityFormProps> = ({
           ))}
         </div>
         {errors.daysOfWeek && (
-          <p className="text-sm text-red-600">{errors.daysOfWeek}</p>
+          <p className="text-xs sm:text-sm text-red-600">{errors.daysOfWeek}</p>
         )}
       </div>
 
       {/* Time Selection */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div className="space-y-2">
-          <Label htmlFor="startTime">Start Time *</Label>
+          <Label htmlFor="startTime" className="text-sm sm:text-base">Start Time *</Label>
           <Input
             id="startTime"
             type="time"
             value={formData.startTime}
             onChange={(e) => handleInputChange('startTime', e.target.value)}
-            className={errors.startTime ? 'border-red-500' : ''}
+            className={`touch-target ${errors.startTime ? 'border-red-500' : ''}`}
           />
           {errors.startTime && (
-            <p className="text-sm text-red-600">{errors.startTime}</p>
+            <p className="text-xs sm:text-sm text-red-600">{errors.startTime}</p>
           )}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="endTime">End Time *</Label>
+          <Label htmlFor="endTime" className="text-sm sm:text-base">End Time *</Label>
           <Input
             id="endTime"
             type="time"
             value={formData.endTime}
             onChange={(e) => handleInputChange('endTime', e.target.value)}
-            className={errors.endTime ? 'border-red-500' : ''}
+            className={`touch-target ${errors.endTime ? 'border-red-500' : ''}`}
           />
           {errors.endTime && (
-            <p className="text-sm text-red-600">{errors.endTime}</p>
+            <p className="text-xs sm:text-sm text-red-600">{errors.endTime}</p>
           )}
         </div>
       </div>
 
       {/* Timezone */}
       <div className="space-y-2">
-        <Label htmlFor="timezone">Timezone</Label>
+        <Label htmlFor="timezone" className="text-sm sm:text-base">Timezone</Label>
         <Select
           value={formData.timezone}
           onValueChange={(value) => handleInputChange('timezone', value)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="touch-target">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -356,7 +385,7 @@ export const ActivityForm: React.FC<ActivityFormProps> = ({
           </SelectContent>
         </Select>
         {errors.timezone && (
-          <p className="text-sm text-red-600">{errors.timezone}</p>
+          <p className="text-xs sm:text-sm text-red-600">{errors.timezone}</p>
         )}
       </div>
 
@@ -365,9 +394,19 @@ export const ActivityForm: React.FC<ActivityFormProps> = ({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="flex-1"
-          style={{
-            backgroundColor: formData.childId ? getChildColor(formData.childId) : undefined
+          className="flex-1 touch-target transition-all"
+          style={getButtonStyles()}
+          onMouseEnter={(e) => {
+            if (formData.childId) {
+              const styles = getButtonHoverStyles();
+              Object.assign(e.currentTarget.style, styles);
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (formData.childId) {
+              const styles = getButtonStyles();
+              Object.assign(e.currentTarget.style, styles);
+            }
           }}
         >
           {isSubmitting ? 'Saving...' : activity ? 'Update Activity' : 'Create Activity'}
@@ -377,7 +416,7 @@ export const ActivityForm: React.FC<ActivityFormProps> = ({
           variant="outline"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="flex-1"
+          className="flex-1 touch-target"
         >
           Cancel
         </Button>

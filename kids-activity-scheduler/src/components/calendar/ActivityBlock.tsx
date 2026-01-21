@@ -3,6 +3,7 @@
 import React from 'react';
 import { ActivityOccurrence } from '@/types';
 import { formatOccurrenceTimeRange, getOccurrenceDuration } from '@/lib/activityOccurrences';
+import { getContrastingTextHex, darkenColor } from '@/lib/colorUtils';
 
 interface ActivityBlockProps {
   occurrence: ActivityOccurrence;
@@ -19,6 +20,8 @@ export const ActivityBlock: React.FC<ActivityBlockProps> = ({
 }) => {
   const duration = getOccurrenceDuration(occurrence);
   const timeRange = formatOccurrenceTimeRange(occurrence);
+  const textColor = getContrastingTextHex(occurrence.childColor);
+  const borderColor = darkenColor(occurrence.childColor, 15);
 
   const handleClick = () => {
     if (onClick) {
@@ -29,34 +32,43 @@ export const ActivityBlock: React.FC<ActivityBlockProps> = ({
   return (
     <div
       className={`
-        relative p-2 rounded-md text-white text-xs cursor-pointer
-        hover:opacity-90 transition-opacity duration-200
-        shadow-sm border-l-4
+        relative p-1.5 sm:p-2 rounded-md cursor-pointer
+        hover:opacity-90 active:opacity-80 transition-all duration-200
+        shadow-sm border-l-4 touch-action-none
         ${className}
       `}
       style={{
         backgroundColor: occurrence.childColor,
-        borderLeftColor: occurrence.childColor,
+        borderLeftColor: borderColor,
+        color: textColor,
         ...style,
       }}
       onClick={handleClick}
       title={`${occurrence.title} - ${occurrence.childName}\n${timeRange}\n${occurrence.location}`}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
     >
-      <div className="font-medium truncate mb-1">
+      <div className="font-semibold truncate mb-0.5 sm:mb-1 text-[10px] sm:text-xs">
         {occurrence.title}
       </div>
-      <div className="text-xs opacity-90 truncate">
+      <div className="text-[9px] sm:text-xs opacity-90 truncate font-medium">
         {occurrence.childName}
       </div>
-      <div className="text-xs opacity-80 truncate">
+      <div className="text-[9px] sm:text-xs opacity-80 truncate">
         {timeRange}
       </div>
       {occurrence.location && (
-        <div className="text-xs opacity-75 truncate mt-1">
+        <div className="text-[9px] sm:text-xs opacity-75 truncate mt-0.5 sm:mt-1">
           📍 {occurrence.location}
         </div>
       )}
-      <div className="absolute top-1 right-1 text-xs opacity-60">
+      <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 text-[9px] sm:text-xs opacity-70 font-medium">
         {duration}m
       </div>
     </div>

@@ -12,6 +12,7 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { initializeUserDocument } from '@/lib/userInit';
 
 interface AuthContextType {
   user: User | null;
@@ -42,7 +43,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user && user.email) {
+        // Initialize user document with notification settings
+        try {
+          await initializeUserDocument(user.uid, user.email);
+        } catch (error) {
+          console.error('Error initializing user document:', error);
+        }
+      }
       setUser(user);
       setLoading(false);
     });

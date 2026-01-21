@@ -13,6 +13,8 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Trash2, Edit, Search, Filter, AlertTriangle, Clock, MapPin, Calendar } from 'lucide-react';
+import { LoadingSpinner, CardSkeleton } from '@/components/common/LoadingSpinner';
+import { ErrorMessage, EmptyState } from '@/components/common/ErrorMessage';
 
 interface ActivityListProps {
   activities: Activity[];
@@ -193,17 +195,12 @@ export const ActivityList: React.FC<ActivityListProps> = ({
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-          <span>Loading activities...</span>
+        <LoadingSpinner size="md" text="Loading activities..." />
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
         </div>
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="p-4 border rounded-lg animate-pulse">
-            <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
-            <div className="h-3 bg-gray-200 rounded w-1/2 mb-1"></div>
-            <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-          </div>
-        ))}
       </div>
     );
   }
@@ -211,15 +208,12 @@ export const ActivityList: React.FC<ActivityListProps> = ({
   // Show error state
   if (error) {
     return (
-      <div className="space-y-4">
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-center gap-2 text-red-800">
-            <AlertTriangle className="h-5 w-5" />
-            <span className="font-medium">Error loading activities</span>
-          </div>
-          <p className="text-red-700 mt-1">{error}</p>
-        </div>
-      </div>
+      <ErrorMessage
+        type="error"
+        title="Error loading activities"
+        message={error}
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 
@@ -318,19 +312,23 @@ export const ActivityList: React.FC<ActivityListProps> = ({
 
       {/* Activity List */}
       {filteredActivities.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          {activities.length === 0 ? (
-            <div>
-              <p className="text-lg font-medium mb-2">No activities yet</p>
-              <p>Create your first activity to get started!</p>
-            </div>
-          ) : (
-            <div>
-              <p className="text-lg font-medium mb-2">No activities match your filters</p>
-              <p>Try adjusting your search or filter criteria.</p>
-            </div>
-          )}
-        </div>
+        activities.length === 0 ? (
+          <EmptyState
+            icon={<Calendar className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" />}
+            title="No activities yet"
+            description="Create your first activity to get started!"
+          />
+        ) : (
+          <EmptyState
+            icon={<Search className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" />}
+            title="No activities match your filters"
+            description="Try adjusting your search or filter criteria."
+            action={{
+              label: 'Clear Filters',
+              onClick: clearFilters,
+            }}
+          />
+        )
       ) : (
         <div className="space-y-3">
           {filteredActivities.map((activity) => {

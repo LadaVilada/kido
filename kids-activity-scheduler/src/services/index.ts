@@ -1,6 +1,7 @@
 // Export all services
 export { ChildrenService } from './childrenService';
 export { ActivitiesService } from './activitiesService';
+export { NotificationService } from './notificationService';
 
 // Re-export types for convenience
 export type {
