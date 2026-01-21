@@ -25,11 +25,11 @@ export const FamilySettings: React.FC = () => {
   }, [user]);
 
   const loadFamily = async () => {
-    if (!user) return;
+    if (!user?.userId) return;
 
     try {
       setLoading(true);
-      const userFamily = await FamilyService.getUserFamily(user.uid);
+      const userFamily = await FamilyService.getUserFamily(user.userId);
       setFamily(userFamily);
       if (userFamily) {
         setFamilyName(userFamily.name);
@@ -43,13 +43,13 @@ export const FamilySettings: React.FC = () => {
 
   const handleCreateFamily = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !familyName.trim()) return;
+    if (!user?.userId || !user?.email || !familyName.trim()) return;
 
     setIsSubmitting(true);
     setError('');
 
     try {
-      await FamilyService.createFamily(user.uid, user.email!, familyName.trim());
+      await FamilyService.createFamily(user.userId, user.email, familyName.trim());
       setSuccess('Family created successfully!');
       await loadFamily();
     } catch (err: any) {
@@ -137,7 +137,7 @@ export const FamilySettings: React.FC = () => {
   }
 
   // Has family - show management UI
-  const isOwner = family.createdBy === user?.uid;
+  const isOwner = family.createdBy === user?.userId;
 
   return (
     <div className="space-y-6">
@@ -215,7 +215,7 @@ export const FamilySettings: React.FC = () => {
                   </div>
                 </div>
 
-                {isOwner && member.userId !== user?.uid && (
+                {isOwner && member.userId !== user?.userId && (
                   <Button
                     variant="ghost"
                     size="sm"

@@ -8,6 +8,8 @@ The Kids Activity Scheduler uses Firestore security rules to protect user data a
 
 ### Helper Functions
 
+The security rules use two helper functions to efficiently manage family-based access control:
+
 #### `getUserFamily()`
 Retrieves the authenticated user's family ID from their user document.
 
@@ -17,7 +19,7 @@ function getUserFamily() {
 }
 ```
 
-**Purpose**: Provides a centralized way to look up which family a user belongs to.
+**Purpose**: Provides a centralized way to look up which family a user belongs to. This single document lookup is more efficient than checking array membership.
 
 #### `isFamilyMember(familyId)`
 Checks if the authenticated user is a member of the specified family.
@@ -28,18 +30,9 @@ function isFamilyMember(familyId) {
 }
 ```
 
-**Purpose**: Validates that a user has access to family-specific resources.
+**Purpose**: Validates that a user has access to family-specific resources by comparing the user's family ID with the requested resource's family ID.
 
-#### `isInFamilyMembers(family)`
-Checks if the user ID exists in the family's members array.
 
-```javascript
-function isInFamilyMembers(family) {
-  return request.auth.uid in family.data.members.map(m => m.userId);
-}
-```
-
-**Purpose**: Alternative check for family membership using the members array (currently unused but available for future use).
 
 ## Access Rules
 
@@ -122,11 +115,12 @@ Access Granted/Denied
 
 ## Benefits of Current Design
 
-1. **Efficient**: Single document lookup instead of array operations
-2. **Scalable**: Works well with large families
-3. **Secure**: Clear separation between families
-4. **Maintainable**: Centralized helper functions
-5. **Flexible**: Easy to add new resource types
+1. **Efficient**: Single document lookup (`getUserFamily()`) instead of array operations for membership checks
+2. **Scalable**: Works well with families of any size without performance degradation
+3. **Secure**: Clear separation between families with no cross-family data access
+4. **Maintainable**: Centralized helper functions make rules easy to understand and update
+5. **Flexible**: Easy to add new resource types with consistent access patterns
+6. **Simple**: Two helper functions provide all necessary access control logic
 
 ## Testing Security Rules
 
@@ -223,8 +217,9 @@ Potential improvements to security rules:
 ## Version History
 
 - **v1.0** (Initial): Basic user-based access control
-- **v2.0** (Current): Family-based access control with helper functions
-  - Added `getUserFamily()` helper
-  - Added `isFamilyMember()` helper
-  - Simplified family access checks
-  - Improved performance with single document lookup
+- **v2.0** (Current): Family-based access control with optimized helper functions
+  - Added `getUserFamily()` helper for efficient family ID lookup
+  - Added `isFamilyMember()` helper for access validation
+  - Removed unused `isInFamilyMembers()` helper (array-based approach)
+  - Simplified family access checks with single document lookup
+  - Improved performance with efficient query patterns
