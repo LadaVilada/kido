@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { IOSInstallPrompt } from "@/components/pwa/IOSInstallPrompt";
+import { ConnectionStatus } from "@/components/common/ConnectionStatus";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -71,7 +74,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
+          <ConnectionStatus />
           {children}
+          <InstallPrompt />
+          <IOSInstallPrompt />
         </AuthProvider>
       </body>
     </html>
