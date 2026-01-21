@@ -15,7 +15,8 @@ export interface User {
 // Child types
 export interface Child {
   id: string;
-  userId: string;
+  userId: string; // Primary owner
+  sharedWith?: string[]; // Array of user IDs who have access
   name: string;
   color: string;
   createdAt: Timestamp;
@@ -36,7 +37,8 @@ export interface UpdateChildInput {
 // Activity types
 export interface Activity {
   id: string;
-  userId: string;
+  userId: string; // Primary owner
+  sharedWith?: string[]; // Array of user IDs who have access
   childId: string;
   title: string;
   location: string;
