@@ -136,6 +136,8 @@ See [E2E_INTEGRATION_TEST.md](docs/E2E_INTEGRATION_TEST.md) for comprehensive te
 - [E2E Testing Guide](docs/E2E_INTEGRATION_TEST.md)
 - [Notification Setup](docs/NOTIFICATION_SETUP.md)
 - [PWA Configuration](docs/PWA.md)
+- [Family Groups Feature](docs/FAMILY_GROUPS.md)
+- [Firestore Security Rules](docs/FIRESTORE_RULES.md)
 
 ## Contributing
 

@@ -1,0 +1,24 @@
+{
+  "enabled": true,
+  "name": "Documentation Sync",
+  "description": "Watches TypeScript source files and configuration files for changes and prompts to update documentation in README.md or docs folder accordingly",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "kids-activity-scheduler/src/**/*.ts",
+      "kids-activity-scheduler/src/**/*.tsx",
+      "kids-activity-scheduler/components.json",
+      "kids-activity-scheduler/next.config.ts",
+      "kids-activity-scheduler/tailwind.config.ts",
+      "kids-activity-scheduler/tsconfig.json",
+      "kids-activity-scheduler/package.json",
+      "kids-activity-scheduler/firebase.json",
+      "kids-activity-scheduler/firestore.rules"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Source files have been modified. Please review the changes and update the documentation accordingly. Check if the README.md needs updates or if documentation in the kids-activity-scheduler/docs folder should be modified to reflect these code changes. Ensure all new features, API changes, configuration updates, or architectural modifications are properly documented."
+  }
+}

@@ -2,7 +2,9 @@
 
 Use this checklist to ensure a smooth deployment to production.
 
-## Pre-Deployment
+## Deployment Checklist
+
+### Pre-Deployment
 
 ### Code Quality
 - [ ] All tests pass locally
@@ -15,10 +17,12 @@ Use this checklist to ensure a smooth deployment to production.
 - [ ] Production Firebase project created
 - [ ] Firebase Authentication enabled (Email/Password + Google)
 - [ ] Firestore database created in production mode
-- [ ] Firestore security rules deployed
+- [ ] **Firestore security rules deployed** (`firebase deploy --only firestore:rules` or `deploy-rules.bat`)
 - [ ] Firestore indexes deployed
 - [ ] Cloud Functions deployed
 - [ ] Firebase authorized domains configured
+
+**Note**: The Firestore security rules have been updated to use efficient helper functions for family access control. Ensure you deploy the latest rules before testing family features.
 
 ### Environment Configuration
 - [ ] `.env.production` created with production values

@@ -80,16 +80,53 @@ interface FamilyMember {
 
 ## Security Rules
 
+The Firestore security rules ensure that only family members can access family data:
+
 ```javascript
-// Children and activities use familyId instead of userId
-match /children/{childId} {
-  allow read, write: if isFamilyMember(resource.data.familyId);
+// Helper function to get user's family ID from their user document
+function getUserFamily() {
+  return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyId;
 }
 
+// Helper function to check if user is a family member
+function isFamilyMember(familyId) {
+  return request.auth != null && getUserFamily() == familyId;
+}
+
+// Family documents - accessible by creator and all members
+match /families/{familyId} {
+  allow read: if request.auth != null && (
+    resource.data.createdBy == request.auth.uid ||
+    getUserFamily() == familyId
+  );
+  allow create: if request.auth != null && request.resource.data.createdBy == request.auth.uid;
+  allow update: if request.auth != null && (
+    resource.data.createdBy == request.auth.uid ||
+    getUserFamily() == familyId
+  );
+  allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+}
+
+// Children - accessible by all family members
+match /children/{childId} {
+  allow read, write: if request.auth != null && isFamilyMember(resource.data.familyId);
+  allow create: if request.auth != null && isFamilyMember(request.resource.data.familyId);
+}
+
+// Activities - accessible by all family members
 match /activities/{activityId} {
-  allow read, write: if isFamilyMember(resource.data.familyId);
+  allow read, write: if request.auth != null && isFamilyMember(resource.data.familyId);
+  allow create: if request.auth != null && isFamilyMember(request.resource.data.familyId);
 }
 ```
+
+### How Security Works
+
+1. **User Document**: Each user has a `familyId` field in their user document
+2. **Family Lookup**: The `getUserFamily()` helper retrieves the user's family ID
+3. **Access Check**: The `isFamilyMember()` helper verifies the user belongs to the requested family
+4. **Efficient**: Uses a single document lookup instead of array operations
+5. **Secure**: Only family members can access family data
 
 ## Migration from Single User
 
@@ -224,6 +261,11 @@ deleteFamily(familyId, userId): Promise<void>
    ```bash
    firebase deploy --only firestore:rules
    ```
+   
+   Or on Windows:
+   ```bash
+   deploy-rules.bat
+   ```
 
 2. **Update Firestore Indexes**:
    ```bash
@@ -234,6 +276,15 @@ deleteFamily(familyId, userId): Promise<void>
    ```bash
    git push origin main
    ```
+
+### Security Rules Details
+
+The updated rules use efficient helper functions:
+- `getUserFamily()`: Retrieves the user's family ID from their user document
+- `isFamilyMember()`: Checks if the user belongs to a specific family
+- Family access is verified by comparing the user's family ID with the resource's family ID
+- Only family creators can delete families
+- All family members have read/write access to children and activities
 
 ## Future Enhancements
 

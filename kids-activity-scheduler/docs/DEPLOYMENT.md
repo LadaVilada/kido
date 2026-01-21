@@ -68,6 +68,16 @@ cd kids-activity-scheduler
 firebase deploy --only firestore:rules
 ```
 
+Or on Windows:
+```bash
+deploy-rules.bat
+```
+
+**Important**: The security rules use helper functions for efficient family access control:
+- `getUserFamily()`: Retrieves user's family ID from their user document
+- `isFamilyMember()`: Verifies user belongs to a specific family
+- These functions enable secure, performant access to family data
+
 5. Deploy Firestore indexes:
 
 ```bash
@@ -265,6 +275,10 @@ Use production Firebase project and Vercel production deployment.
 Before going live:
 
 - [ ] Firestore security rules deployed and tested
+  - [ ] Helper functions (`getUserFamily()`, `isFamilyMember()`) working correctly
+  - [ ] Family access control verified
+  - [ ] Only family members can access family data
+  - [ ] Family creators can delete families
 - [ ] Firebase Auth authorized domains configured
 - [ ] Environment variables set in Vercel (not in code)
 - [ ] HTTPS enabled (automatic with Vercel)
@@ -272,6 +286,16 @@ Before going live:
 - [ ] API keys restricted in Firebase Console
 - [ ] Cloud Functions have proper error handling
 - [ ] Rate limiting configured (if needed)
+
+### Testing Security Rules
+
+Test these scenarios before deployment:
+1. User can only access their own user document
+2. User can read/write to their family document
+3. User can read/write children in their family
+4. User can read/write activities in their family
+5. User cannot access other families' data
+6. Only family creator can delete the family
 
 ## Part 7: Performance Optimization
 
