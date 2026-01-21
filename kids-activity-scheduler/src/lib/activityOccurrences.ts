@@ -17,28 +17,47 @@ export const createDateTimeInTimezone = (
     const hourStr = String(hour).padStart(2, '0');
     const minuteStr = String(minute).padStart(2, '0');
     
-    const dateTimeString = `${year}-${month}-${day}T${hourStr}:${minuteStr}:00`;
+    // Create a date/time in the specified timezone using Intl.DateTimeFormat
+    // This approach creates a date that represents the correct moment in time
+    // for the specified timezone
+    const dateTimeString = `${year}-${month}-${day} ${hourStr}:${minuteStr}:00`;
     
-    // Create a date in the specified timezone
-    const tempDate = new Date(dateTimeString);
+    // Use a more robust timezone conversion approach
+    // Create a date assuming it's in the target timezone, then adjust for the actual timezone offset
+    const targetDate = new Date(`${year}-${month}-${day}T${hourStr}:${minuteStr}:00`);
     
-    // Get the timezone offset for the specified timezone
-    const formatter = new Intl.DateTimeFormat('en', {
-      timeZone: timezone,
-      timeZoneName: 'longOffset'
-    });
+    // Get the timezone offset for the target timezone at this date
+    const targetTimezoneOffset = getTimezoneOffset(targetDate, timezone);
+    const localTimezoneOffset = targetDate.getTimezoneOffset();
     
-    // For now, we'll use a simpler approach and assume the local timezone
-    // In a production app, you might want to use a library like date-fns-tz
-    const localDate = new Date(date);
-    localDate.setHours(hour, minute, 0, 0);
+    // Calculate the difference and adjust the date
+    const offsetDifference = (localTimezoneOffset - targetTimezoneOffset) * 60 * 1000;
+    const adjustedDate = new Date(targetDate.getTime() + offsetDifference);
     
-    return localDate;
+    return adjustedDate;
   } catch (error) {
     // Fallback to local timezone if timezone parsing fails
     const localDate = new Date(date);
     localDate.setHours(hour, minute, 0, 0);
     return localDate;
+  }
+};
+
+/**
+ * Gets the timezone offset in minutes for a specific timezone at a given date
+ */
+export const getTimezoneOffset = (date: Date, timezone: string): number => {
+  try {
+    // Create two dates: one in UTC and one in the target timezone
+    const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+    
+    // Calculate the offset in minutes
+    const offsetMs = utcDate.getTime() - tzDate.getTime();
+    return Math.round(offsetMs / (1000 * 60));
+  } catch (error) {
+    // Fallback to local timezone offset
+    return date.getTimezoneOffset();
   }
 };
 
@@ -541,7 +560,191 @@ export const validateActivitySchedule = (activity: Partial<Activity>): {
 };
 
 /**
- * Finds the optimal time slot for a new activity to avoid conflicts
+ * Generates weekly occurrences for an activity over a specified number of weeks
+ */
+export const generateWeeklyOccurrences = (
+  activity: Activity,
+  child: Child,
+  startWeek: Date,
+  numberOfWeeks: number = 4
+): ActivityOccurrence[] => {
+  const occurrences: ActivityOccurrence[] = [];
+  const weekStart = getWeekStartDate(startWeek);
+  
+  for (let week = 0; week < numberOfWeeks; week++) {
+    const currentWeekStart = new Date(weekStart);
+    currentWeekStart.setDate(weekStart.getDate() + (week * 7));
+    
+    const currentWeekEnd = new Date(currentWeekStart);
+    currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+    currentWeekEnd.setHours(23, 59, 59, 999);
+    
+    const weekOccurrences = generateOccurrencesForActivity(
+      activity,
+      child,
+      currentWeekStart,
+      currentWeekEnd
+    );
+    
+    occurrences.push(...weekOccurrences);
+  }
+  
+  return occurrences;
+};
+
+/**
+ * Calculates the next N occurrences for an activity
+ */
+export const getNextNOccurrences = (
+  activity: Activity,
+  child: Child,
+  count: number = 5,
+  fromDate: Date = new Date()
+): ActivityOccurrence[] => {
+  const occurrences: ActivityOccurrence[] = [];
+  const maxWeeksToLook = Math.ceil(count / activity.daysOfWeek.length) + 2;
+  
+  const weeklyOccurrences = generateWeeklyOccurrences(
+    activity,
+    child,
+    fromDate,
+    maxWeeksToLook
+  );
+  
+  // Filter to only future occurrences and take the first N
+  const futureOccurrences = weeklyOccurrences
+    .filter(occurrence => occurrence.startDateTime > fromDate)
+    .sort((a, b) => a.startDateTime.getTime() - b.startDateTime.getTime())
+    .slice(0, count);
+  
+  return futureOccurrences;
+};
+
+/**
+ * Converts a date/time from one timezone to another
+ */
+export const convertTimezone = (
+  date: Date,
+  fromTimezone: string,
+  toTimezone: string
+): Date => {
+  try {
+    // Get the date/time string in the source timezone
+    const sourceTimeString = date.toLocaleString('en-US', { 
+      timeZone: fromTimezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    
+    // Parse the components
+    const [datePart, timePart] = sourceTimeString.split(', ');
+    const [month, day, year] = datePart.split('/');
+    const [hour, minute, second] = timePart.split(':');
+    
+    // Create a new date in the target timezone
+    const isoString = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour}:${minute}:${second}`;
+    const targetDate = new Date(isoString);
+    
+    // Adjust for timezone difference
+    const sourceOffset = getTimezoneOffset(date, fromTimezone);
+    const targetOffset = getTimezoneOffset(targetDate, toTimezone);
+    const offsetDifference = (sourceOffset - targetOffset) * 60 * 1000;
+    
+    return new Date(targetDate.getTime() + offsetDifference);
+  } catch (error) {
+    // Fallback to original date if conversion fails
+    return new Date(date);
+  }
+};
+
+/**
+ * Gets the current time in a specific timezone
+ */
+export const getCurrentTimeInTimezone = (timezone: string): Date => {
+  try {
+    const now = new Date();
+    return convertTimezone(now, getUserTimezone(), timezone);
+  } catch (error) {
+    return new Date();
+  }
+};
+
+/**
+ * Checks if a timezone observes daylight saving time
+ */
+export const observesDaylightSaving = (timezone: string): boolean => {
+  try {
+    const jan = new Date(2024, 0, 1); // January 1st
+    const jul = new Date(2024, 6, 1); // July 1st
+    
+    const janOffset = getTimezoneOffset(jan, timezone);
+    const julOffset = getTimezoneOffset(jul, timezone);
+    
+    return janOffset !== julOffset;
+  } catch (error) {
+    return false;
+  }
+};
+
+/**
+ * Gets timezone information for display
+ */
+export const getTimezoneInfo = (timezone: string): {
+  name: string;
+  abbreviation: string;
+  offset: string;
+  observesDST: boolean;
+} => {
+  try {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      timeZoneName: 'short'
+    });
+    
+    const parts = formatter.formatToParts(now);
+    const abbreviation = parts.find(part => part.type === 'timeZoneName')?.value || '';
+    
+    const offset = getTimezoneOffset(now, timezone);
+    const offsetHours = Math.floor(Math.abs(offset) / 60);
+    const offsetMinutes = Math.abs(offset) % 60;
+    const offsetSign = offset <= 0 ? '+' : '-';
+    const offsetString = `${offsetSign}${offsetHours.toString().padStart(2, '0')}:${offsetMinutes.toString().padStart(2, '0')}`;
+    
+    return {
+      name: timezone,
+      abbreviation,
+      offset: offsetString,
+      observesDST: observesDaylightSaving(timezone)
+    };
+  } catch (error) {
+    return {
+      name: timezone,
+      abbreviation: '',
+      offset: '+00:00',
+      observesDST: false
+    };
+  }
+};
+
+/**
+ * Gets the user's current timezone
+ */
+export const getUserTimezone = (): string => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+  } catch (error) {
+    return 'UTC';
+  }
+};
+/**
+ * 
+Finds the optimal time slot for a new activity to avoid conflicts
  */
 export const findOptimalTimeSlot = (
   existingActivities: Activity[],
@@ -596,4 +799,258 @@ export const findOptimalTimeSlot = (
   }
   
   return null;
+};
+
+/**
+ * Calculates activity statistics for a given time period
+ */
+export const calculateActivityStatistics = (
+  activities: Activity[],
+  children: Child[],
+  startDate: Date,
+  endDate: Date
+): {
+  totalOccurrences: number;
+  totalHours: number;
+  averagePerDay: number;
+  busiest: { day: number; count: number };
+  childStats: Record<string, { name: string; count: number; hours: number }>;
+} => {
+  const occurrences = generateActivityOccurrences(activities, children, startDate, endDate);
+  const childrenMap = new Map(children.map(child => [child.id, child]));
+  
+  const dayCount: Record<number, number> = {};
+  const childStats: Record<string, { name: string; count: number; hours: number }> = {};
+  let totalHours = 0;
+  
+  occurrences.forEach(occurrence => {
+    const dayOfWeek = occurrence.date.getDay();
+    dayCount[dayOfWeek] = (dayCount[dayOfWeek] || 0) + 1;
+    
+    const duration = getOccurrenceDuration(occurrence) / 60; // Convert to hours
+    totalHours += duration;
+    
+    // Find the child for this occurrence
+    const activity = activities.find(a => a.id === occurrence.activityId);
+    if (activity) {
+      const child = childrenMap.get(activity.childId);
+      if (child) {
+        if (!childStats[child.id]) {
+          childStats[child.id] = { name: child.name, count: 0, hours: 0 };
+        }
+        childStats[child.id].count++;
+        childStats[child.id].hours += duration;
+      }
+    }
+  });
+  
+  // Find busiest day
+  const busiestDay = Object.entries(dayCount).reduce(
+    (max, [day, count]) => count > max.count ? { day: parseInt(day), count } : max,
+    { day: 0, count: 0 }
+  );
+  
+  const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  return {
+    totalOccurrences: occurrences.length,
+    totalHours,
+    averagePerDay: totalDays > 0 ? occurrences.length / totalDays : 0,
+    busiest: busiestDay,
+    childStats
+  };
+};
+
+/**
+ * Generates a calendar grid with activity occurrences
+ */
+export const generateCalendarGrid = (
+  activities: Activity[],
+  children: Child[],
+  month: number,
+  year: number
+): {
+  weeks: Array<{
+    days: Array<{
+      date: Date;
+      isCurrentMonth: boolean;
+      isToday: boolean;
+      occurrences: ActivityOccurrence[];
+    }>;
+  }>;
+} => {
+  // Get the first day of the month
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  
+  // Get the start of the calendar grid (Sunday of the first week)
+  const calendarStart = new Date(firstDay);
+  calendarStart.setDate(firstDay.getDate() - firstDay.getDay());
+  
+  // Get the end of the calendar grid (Saturday of the last week)
+  const calendarEnd = new Date(lastDay);
+  calendarEnd.setDate(lastDay.getDate() + (6 - lastDay.getDay()));
+  
+  // Generate all occurrences for the calendar period
+  const occurrences = generateActivityOccurrences(activities, children, calendarStart, calendarEnd);
+  const occurrencesByDate = groupOccurrencesByDate(occurrences);
+  
+  const weeks: Array<{
+    days: Array<{
+      date: Date;
+      isCurrentMonth: boolean;
+      isToday: boolean;
+      occurrences: ActivityOccurrence[];
+    }>;
+  }> = [];
+  
+  const currentDate = new Date(calendarStart);
+  const today = new Date();
+  
+  while (currentDate <= calendarEnd) {
+    const week: {
+      days: Array<{
+        date: Date;
+        isCurrentMonth: boolean;
+        isToday: boolean;
+        occurrences: ActivityOccurrence[];
+      }>;
+    } = { days: [] };
+    
+    // Generate 7 days for this week
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(currentDate);
+      const dateKey = date.toDateString();
+      const dayOccurrences = occurrencesByDate.get(dateKey) || [];
+      
+      week.days.push({
+        date,
+        isCurrentMonth: date.getMonth() === month,
+        isToday: date.toDateString() === today.toDateString(),
+        occurrences: dayOccurrences
+      });
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    weeks.push(week);
+  }
+  
+  return { weeks };
+};
+
+/**
+ * Finds potential scheduling conflicts across all activities
+ */
+export const findSchedulingConflicts = (
+  activities: Activity[],
+  children: Child[],
+  lookAheadDays: number = 30
+): Array<{
+  date: Date;
+  conflicts: Array<{
+    occurrence1: ActivityOccurrence;
+    occurrence2: ActivityOccurrence;
+    overlapMinutes: number;
+  }>;
+}> => {
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + lookAheadDays);
+  
+  const occurrences = generateActivityOccurrences(activities, children, new Date(), endDate);
+  const conflictsByDate: Record<string, Array<{
+    occurrence1: ActivityOccurrence;
+    occurrence2: ActivityOccurrence;
+    overlapMinutes: number;
+  }>> = {};
+  
+  // Check each occurrence against all others
+  for (let i = 0; i < occurrences.length; i++) {
+    for (let j = i + 1; j < occurrences.length; j++) {
+      const occ1 = occurrences[i];
+      const occ2 = occurrences[j];
+      
+      if (hasTimeConflict(occ1, occ2)) {
+        const dateKey = occ1.date.toDateString();
+        
+        // Calculate overlap duration
+        const start1 = occ1.startDateTime.getTime();
+        const end1 = occ1.endDateTime.getTime();
+        const start2 = occ2.startDateTime.getTime();
+        const end2 = occ2.endDateTime.getTime();
+        
+        const overlapStart = Math.max(start1, start2);
+        const overlapEnd = Math.min(end1, end2);
+        const overlapMinutes = Math.round((overlapEnd - overlapStart) / (1000 * 60));
+        
+        if (!conflictsByDate[dateKey]) {
+          conflictsByDate[dateKey] = [];
+        }
+        
+        conflictsByDate[dateKey].push({
+          occurrence1: occ1,
+          occurrence2: occ2,
+          overlapMinutes
+        });
+      }
+    }
+  }
+  
+  // Convert to array format
+  return Object.entries(conflictsByDate).map(([dateString, conflicts]) => ({
+    date: new Date(dateString),
+    conflicts
+  }));
+};
+
+/**
+ * Exports activity occurrences to a structured format for external use
+ */
+export const exportOccurrences = (
+  activities: Activity[],
+  children: Child[],
+  startDate: Date,
+  endDate: Date,
+  format: 'json' | 'csv' = 'json'
+): string => {
+  const occurrences = generateActivityOccurrences(activities, children, startDate, endDate);
+  
+  if (format === 'csv') {
+    const headers = [
+      'Date',
+      'Start Time',
+      'End Time',
+      'Activity',
+      'Child',
+      'Location',
+      'Duration (minutes)'
+    ];
+    
+    const rows = occurrences.map(occ => [
+      occ.date.toISOString().split('T')[0],
+      occ.startDateTime.toLocaleTimeString([], { hour12: false }),
+      occ.endDateTime.toLocaleTimeString([], { hour12: false }),
+      occ.title,
+      occ.childName,
+      occ.location,
+      getOccurrenceDuration(occ).toString()
+    ]);
+    
+    return [headers, ...rows].map(row => row.join(',')).join('\n');
+  }
+  
+  // JSON format
+  return JSON.stringify(
+    occurrences.map(occ => ({
+      date: occ.date.toISOString().split('T')[0],
+      startTime: occ.startDateTime.toISOString(),
+      endTime: occ.endDateTime.toISOString(),
+      activity: occ.title,
+      child: occ.childName,
+      location: occ.location,
+      durationMinutes: getOccurrenceDuration(occ)
+    })),
+    null,
+    2
+  );
 };

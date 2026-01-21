@@ -245,3 +245,254 @@ export const getTimezoneDisplayName = (timezone: string): string => {
   const option = getTimezoneOptions().find(opt => opt.value === timezone);
   return option?.label || timezone;
 };
+/**
+
+ * Creates a date in a specific timezone from date components
+ */
+export const createDateInTimezone = (
+  year: number,
+  month: number, // 0-based (0 = January)
+  day: number,
+  hour: number = 0,
+  minute: number = 0,
+  timezone: string
+): Date => {
+  try {
+    // Create a date string in ISO format
+    const monthStr = String(month + 1).padStart(2, '0');
+    const dayStr = String(day).padStart(2, '0');
+    const hourStr = String(hour).padStart(2, '0');
+    const minuteStr = String(minute).padStart(2, '0');
+    
+    const isoString = `${year}-${monthStr}-${dayStr}T${hourStr}:${minuteStr}:00`;
+    
+    // Create a temporary date
+    const tempDate = new Date(isoString);
+    
+    // Get timezone offsets
+    const localOffset = tempDate.getTimezoneOffset();
+    const targetOffset = getTimezoneOffsetForDate(tempDate, timezone);
+    
+    // Adjust for timezone difference
+    const offsetDifference = (localOffset - targetOffset) * 60 * 1000;
+    return new Date(tempDate.getTime() + offsetDifference);
+  } catch (error) {
+    // Fallback to local timezone
+    return new Date(year, month, day, hour, minute);
+  }
+};
+
+/**
+ * Gets the timezone offset for a specific date and timezone
+ */
+export const getTimezoneOffsetForDate = (date: Date, timezone: string): number => {
+  try {
+    // Use Intl.DateTimeFormat to get timezone-aware formatting
+    const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const tzDate = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+    
+    // Calculate offset in minutes
+    return Math.round((utcDate.getTime() - tzDate.getTime()) / (1000 * 60));
+  } catch (error) {
+    return date.getTimezoneOffset();
+  }
+};
+
+/**
+ * Converts a time string and date to a full Date object in a specific timezone
+ */
+export const timeStringToDateInTimezone = (
+  timeString: string,
+  date: Date,
+  timezone: string
+): Date => {
+  const { hours, minutes } = parseTimeString(timeString);
+  return createDateInTimezone(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    hours,
+    minutes,
+    timezone
+  );
+};
+
+/**
+ * Gets the week number of the year for a given date
+ */
+export const getWeekNumber = (date: Date): number => {
+  const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+  const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
+  return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+};
+
+/**
+ * Gets the month name for a given month number
+ */
+export const getMonthName = (month: number, short: boolean = false): string => {
+  const date = new Date(2024, month, 1);
+  return date.toLocaleDateString(undefined, { 
+    month: short ? 'short' : 'long' 
+  });
+};
+
+/**
+ * Gets the day name for a given day number (0 = Sunday)
+ */
+export const getDayName = (day: number, short: boolean = false): string => {
+  const date = new Date(2024, 0, day + 1); // January 1, 2024 was a Monday, so day 1
+  // Adjust to get the correct day
+  date.setDate(date.getDate() + (day === 0 ? 6 : day - 1));
+  return date.toLocaleDateString(undefined, { 
+    weekday: short ? 'short' : 'long' 
+  });
+};
+
+/**
+ * Checks if a year is a leap year
+ */
+export const isLeapYear = (year: number): boolean => {
+  return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+};
+
+/**
+ * Gets the number of days in a month
+ */
+export const getDaysInMonth = (month: number, year: number): number => {
+  return new Date(year, month + 1, 0).getDate();
+};
+
+/**
+ * Rounds a date to the nearest specified minutes
+ */
+export const roundToNearestMinutes = (date: Date, minutes: number): Date => {
+  const ms = 1000 * 60 * minutes;
+  return new Date(Math.round(date.getTime() / ms) * ms);
+};
+
+/**
+ * Gets business hours for a given date (default 9 AM to 5 PM)
+ */
+export const getBusinessHours = (
+  date: Date,
+  startHour: number = 9,
+  endHour: number = 17
+): { start: Date; end: Date } => {
+  const start = new Date(date);
+  start.setHours(startHour, 0, 0, 0);
+  
+  const end = new Date(date);
+  end.setHours(endHour, 0, 0, 0);
+  
+  return { start, end };
+};
+
+/**
+ * Checks if a date falls within business hours
+ */
+export const isBusinessHours = (
+  date: Date,
+  startHour: number = 9,
+  endHour: number = 17
+): boolean => {
+  const hour = date.getHours();
+  const dayOfWeek = date.getDay();
+  
+  // Check if it's a weekday (Monday = 1, Friday = 5)
+  const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+  
+  // Check if it's within business hours
+  const isWithinHours = hour >= startHour && hour < endHour;
+  
+  return isWeekday && isWithinHours;
+};
+
+/**
+ * Calculates the duration between two dates in various units
+ */
+export const calculateDuration = (
+  startDate: Date,
+  endDate: Date,
+  unit: 'milliseconds' | 'seconds' | 'minutes' | 'hours' | 'days' = 'minutes'
+): number => {
+  const diffMs = endDate.getTime() - startDate.getTime();
+  
+  switch (unit) {
+    case 'milliseconds':
+      return diffMs;
+    case 'seconds':
+      return Math.round(diffMs / 1000);
+    case 'minutes':
+      return Math.round(diffMs / (1000 * 60));
+    case 'hours':
+      return Math.round(diffMs / (1000 * 60 * 60));
+    case 'days':
+      return Math.round(diffMs / (1000 * 60 * 60 * 24));
+    default:
+      return Math.round(diffMs / (1000 * 60));
+  }
+};
+
+/**
+ * Formats a duration in a human-readable format
+ */
+export const formatDuration = (minutes: number): string => {
+  if (minutes < 60) {
+    return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+  }
+  
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  
+  if (remainingMinutes === 0) {
+    return `${hours} hour${hours === 1 ? '' : 's'}`;
+  }
+  
+  return `${hours}h ${remainingMinutes}m`;
+};
+
+/**
+ * Gets the ordinal suffix for a number (1st, 2nd, 3rd, etc.)
+ */
+export const getOrdinalSuffix = (num: number): string => {
+  const j = num % 10;
+  const k = num % 100;
+  
+  if (j === 1 && k !== 11) {
+    return num + 'st';
+  }
+  if (j === 2 && k !== 12) {
+    return num + 'nd';
+  }
+  if (j === 3 && k !== 13) {
+    return num + 'rd';
+  }
+  return num + 'th';
+};
+
+/**
+ * Creates a date range array between two dates
+ */
+export const createDateRange = (startDate: Date, endDate: Date): Date[] => {
+  const dates: Date[] = [];
+  const currentDate = new Date(startDate);
+  
+  while (currentDate <= endDate) {
+    dates.push(new Date(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return dates;
+};
+
+/**
+ * Checks if two date ranges overlap
+ */
+export const dateRangesOverlap = (
+  start1: Date,
+  end1: Date,
+  start2: Date,
+  end2: Date
+): boolean => {
+  return start1 <= end2 && start2 <= end1;
+};

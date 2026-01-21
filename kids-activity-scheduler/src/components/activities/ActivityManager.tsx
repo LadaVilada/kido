@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Activity, Child, CreateActivityInput, UpdateActivityInput } from '@/types';
+import { Activity, CreateActivityInput, UpdateActivityInput } from '@/types';
 import { useActivities } from '@/hooks/useActivities';
 import { useChildren } from '@/hooks/useChildren';
 import { ActivityForm } from './ActivityForm';
@@ -20,7 +20,6 @@ export const ActivityManager: React.FC<ActivityManagerProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const {
     activities,
@@ -108,19 +107,11 @@ export const ActivityManager: React.FC<ActivityManagerProps> = ({
   };
 
   const handleDeleteActivity = async (activityId: string) => {
-    if (deleteConfirm === activityId) {
-      try {
-        await deleteActivity(activityId);
-        setDeleteConfirm(null);
-      } catch (error: any) {
-        alert(error.message || 'Failed to delete activity');
-      }
-    } else {
-      setDeleteConfirm(activityId);
-      // Auto-clear confirmation after 5 seconds
-      setTimeout(() => {
-        setDeleteConfirm(null);
-      }, 5000);
+    try {
+      await deleteActivity(activityId);
+    } catch (error: any) {
+      // Error is already handled by the hook and will be displayed in the ActivityList
+      console.error('Failed to delete activity:', error);
     }
   };
 
@@ -238,38 +229,8 @@ export const ActivityManager: React.FC<ActivityManagerProps> = ({
           children={children}
           onEdit={handleEditActivity}
           onDelete={handleDeleteActivity}
+          error={error}
         />
-      )}
-
-      {/* Delete Confirmation */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <div className="flex items-center gap-3 mb-4">
-              <AlertTriangle className="h-6 w-6 text-red-600" />
-              <h3 className="text-lg font-semibold">Confirm Delete</h3>
-            </div>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete this activity? This action cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <Button
-                variant="destructive"
-                onClick={() => handleDeleteActivity(deleteConfirm)}
-                className="flex-1"
-              >
-                Delete Activity
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setDeleteConfirm(null)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
