@@ -169,10 +169,13 @@ export const useCalendar = (options: UseCalendarOptions = {}): UseCalendarReturn
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, isLoading, refreshData]);
 
-  // Update current date when initialDate changes
+  // Update current date when initialDate changes (only if it's actually different)
   useEffect(() => {
-    setCurrentDate(initialDate);
-  }, [initialDate]);
+    // Only update if the date is actually different (compare timestamps)
+    if (initialDate.getTime() !== currentDate.getTime()) {
+      setCurrentDate(initialDate);
+    }
+  }, [initialDate.getTime()]); // Use timestamp to avoid infinite loop
 
   return {
     // Current state
