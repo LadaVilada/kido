@@ -1,12 +1,13 @@
 // Dynamic imports for code splitting and lazy loading
 import dynamic from 'next/dynamic';
+import React from 'react';
 import { PageLoader } from '@/components/common/LoadingSpinner';
 
 // Lazy load calendar components
 export const CalendarView = dynamic(
   () => import('@/components/calendar/CalendarView').then(mod => ({ default: mod.CalendarView })),
   {
-    loading: PageLoader,
+    loading: () => React.createElement(PageLoader),
     ssr: true,
   }
 );
@@ -14,7 +15,7 @@ export const CalendarView = dynamic(
 export const ActivityList = dynamic(
   () => import('@/components/activities/ActivityList').then(mod => ({ default: mod.ActivityList })),
   {
-    loading: PageLoader,
+    loading: () => React.createElement(PageLoader),
     ssr: true,
   }
 );
@@ -22,7 +23,7 @@ export const ActivityList = dynamic(
 export const ActivityForm = dynamic(
   () => import('@/components/activities/ActivityForm').then(mod => ({ default: mod.ActivityForm })),
   {
-    loading: PageLoader,
+    loading: () => React.createElement(PageLoader),
     ssr: false, // Form doesn't need SSR
   }
 );

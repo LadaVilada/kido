@@ -4,6 +4,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { IOSInstallPrompt } from "@/components/pwa/IOSInstallPrompt";
 import { ConnectionStatus } from "@/components/common/ConnectionStatus";
+import { Navigation } from "@/components/common/Navigation";
 import { NotificationPrompt } from "@/components/notifications/NotificationPrompt";
 import "./globals.css";
 
@@ -75,6 +76,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
+          <Navigation />
           <ConnectionStatus />
           {children}
           <InstallPrompt />

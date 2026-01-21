@@ -15,8 +15,7 @@ export async function initializeUserDocument(
 
     if (!userDoc.exists()) {
       // Create new user document with default settings
-      const newUser: Omit<User, 'userId'> = {
-        userId,
+      const newUser = {
         email,
         createdAt: new Date() as any,
         notificationSettings: {
