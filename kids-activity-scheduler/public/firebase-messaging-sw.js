@@ -4,12 +4,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
 
 // Initialize Firebase in the service worker
 firebase.initializeApp({
-  apiKey: 'FIREBASE_API_KEY',
-  authDomain: 'FIREBASE_AUTH_DOMAIN',
-  projectId: 'FIREBASE_PROJECT_ID',
-  storageBucket: 'FIREBASE_STORAGE_BUCKET',
-  messagingSenderId: 'FIREBASE_MESSAGING_SENDER_ID',
-  appId: 'FIREBASE_APP_ID',
+  apiKey: 'AIzaSyDyeqGy97wE5umyrZiph4BvSH2HsGtTqkI',
+  authDomain: 'kiro-4ff97.firebaseapp.com',
+  projectId: 'kiro-4ff97',
+  storageBucket: 'kiro-4ff97.firebasestorage.app',
+  messagingSenderId: '787360430862',
+  appId: '1:787360430862:web:801419ed2c86e144d7355f',
 });
 
 const messaging = firebase.messaging();
