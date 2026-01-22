@@ -56,10 +56,10 @@ export const Navigation: React.FC = () => {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors touch-manipulation select-none min-h-[44px] ${
                       isActive
                         ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/80'
                     }`}
                   >
                     <Icon className="h-4 w-4" />
@@ -91,10 +91,10 @@ export const Navigation: React.FC = () => {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
+                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-xs font-medium whitespace-nowrap transition-colors touch-manipulation select-none min-h-[44px] ${
                   isActive
                     ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground active:bg-muted/80'
                 }`}
               >
                 <Icon className="h-4 w-4" />

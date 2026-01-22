@@ -283,7 +283,13 @@
     - Optimize bundle size and loading times
     - _Requirements: 5.4, 5.5_
 
-  - [ ]* 8.4 Write PWA functionality tests
+  - [x] 8.4 Write PWA functionality tests
+
+
+
+
+
+
     - Test service worker caching and offline functionality
     - Test PWA installation across different browsers
     - Performance testing with Lighthouse audits

@@ -42,3 +42,77 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: vi.fn(),
   })),
 });
+
+// Mock Service Worker API
+Object.defineProperty(navigator, 'serviceWorker', {
+  writable: true,
+  value: {
+    register: vi.fn().mockResolvedValue({
+      installing: null,
+      waiting: null,
+      active: { state: 'activated' },
+      scope: '/',
+      update: vi.fn(),
+      unregister: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
+    ready: Promise.resolve({
+      installing: null,
+      waiting: null,
+      active: { state: 'activated' },
+      scope: '/',
+      update: vi.fn(),
+      unregister: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
+    controller: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  },
+});
+
+// Mock Cache Storage API
+global.caches = {
+  open: vi.fn().mockResolvedValue({
+    match: vi.fn(),
+    put: vi.fn(),
+    add: vi.fn(),
+    addAll: vi.fn(),
+    delete: vi.fn(),
+    keys: vi.fn().mockResolvedValue([]),
+  }),
+  match: vi.fn(),
+  has: vi.fn(),
+  delete: vi.fn(),
+  keys: vi.fn().mockResolvedValue([]),
+} as any;
+
+// Mock Performance Timing API
+Object.defineProperty(performance, 'timing', {
+  writable: true,
+  value: {
+    navigationStart: 0,
+    unloadEventStart: 0,
+    unloadEventEnd: 0,
+    redirectStart: 0,
+    redirectEnd: 0,
+    fetchStart: 0,
+    domainLookupStart: 0,
+    domainLookupEnd: 0,
+    connectStart: 0,
+    connectEnd: 0,
+    secureConnectionStart: 0,
+    requestStart: 0,
+    responseStart: 0,
+    responseEnd: 0,
+    domLoading: 0,
+    domInteractive: 0,
+    domContentLoadedEventStart: 0,
+    domContentLoadedEventEnd: 0,
+    domComplete: 0,
+    loadEventStart: 0,
+    loadEventEnd: 0,
+  },
+});

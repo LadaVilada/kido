@@ -3,6 +3,10 @@ import {
   calculateLayout,
   detectOverlaps,
   dateToMinutes,
+  getOverflowCount,
+  getOverflowActivities,
+  getAllOverflowActivities,
+  shouldDisplayActivity,
   type ActivityLayout,
 } from '../calendarLayout';
 import { ActivityOccurrence } from '@/types';
@@ -185,5 +189,158 @@ describe('calculateLayout - Width and Position Calculations', () => {
     // 5th should be overflow
     const overflowLayouts = layouts.filter(l => l.isOverflow);
     expect(overflowLayouts).toHaveLength(1);
+  });
+});
+
+describe('Overflow Handling', () => {
+  it('should detect overflow when more than 4 activities overlap', () => {
+    const activities = [
+      createActivity('1', 9, 0, 10, 0, 'Child A'),
+      createActivity('2', 9, 0, 10, 0, 'Child B'),
+      createActivity('3', 9, 0, 10, 0, 'Child C'),
+      createActivity('4', 9, 0, 10, 0, 'Child D'),
+      createActivity('5', 9, 0, 10, 0, 'Child E'),
+      createActivity('6', 9, 0, 10, 0, 'Child F'),
+    ];
+
+    const overlapGroups = detectOverlaps(activities);
+    const layouts = calculateLayout(overlapGroups, 4);
+
+    // Should have 6 layouts total
+    expect(layouts).toHaveLength(6);
+    
+    // First 4 should not be overflow
+    const displayedLayouts = layouts.filter(l => !l.isOverflow);
+    expect(displayedLayouts).toHaveLength(4);
+    
+    // Last 2 should be overflow
+    const overflowLayouts = layouts.filter(l => l.isOverflow);
+    expect(overflowLayouts).toHaveLength(2);
+    expect(overflowLayouts[0].isOverflow).toBe(true);
+    expect(overflowLayouts[1].isOverflow).toBe(true);
+  });
+
+  it('should get overflow count at specific time', () => {
+    const activities = [
+      createActivity('1', 9, 0, 10, 0, 'Child A'),
+      createActivity('2', 9, 0, 10, 0, 'Child B'),
+      createActivity('3', 9, 0, 10, 0, 'Child C'),
+      createActivity('4', 9, 0, 10, 0, 'Child D'),
+      createActivity('5', 9, 0, 10, 0, 'Child E'),
+    ];
+
+    const overlapGroups = detectOverlaps(activities);
+    const layouts = calculateLayout(overlapGroups, 4);
+
+    // At 9:30 (570 minutes), should have 1 overflow activity
+    const count = getOverflowCount(570, layouts);
+    expect(count).toBe(1);
+  });
+
+  it('should get overflow count of 0 when no overflow', () => {
+    const activities = [
+      createActivity('1', 9, 0, 10, 0, 'Child A'),
+      createActivity('2', 9, 0, 10, 0, 'Child B'),
+    ];
+
+    const overlapGroups = detectOverlaps(activities);
+    const layouts = calculateLayout(overlapGroups, 4);
+
+    const count = getOverflowCount(570, layouts);
+    expect(count).toBe(0);
+  });
+
+  it('should get overflow activities for time segment', () => {
+    const activities = [
+      createActivity('1', 9, 0, 10, 0, 'Child A'),
+      createActivity('2', 9, 0, 10, 0, 'Child B'),
+      createActivity('3', 9, 0, 10, 0, 'Child C'),
+      createActivity('4', 9, 0, 10, 0, 'Child D'),
+      createActivity('5', 9, 0, 10, 0, 'Child E'),
+      createActivity('6', 10, 0, 11, 0, 'Child F'), // Not overlapping with first 5
+    ];
+
+    const overlapGroups = detectOverlaps(activities);
+    const layouts = calculateLayout(overlapGroups, 4);
+
+    // Get overflow activities for 9:00-10:00 segment
+    const overflowActivities = getOverflowActivities(540, 600, layouts, activities);
+    
+    expect(overflowActivities).toHaveLength(1);
+    expect(overflowActivities[0].activityId).toBe('5');
+  });
+
+  it('should get all overflow activities', () => {
+    const activities = [
+      createActivity('1', 9, 0, 10, 0, 'Child A'),
+      createActivity('2', 9, 0, 10, 0, 'Child B'),
+      createActivity('3', 9, 0, 10, 0, 'Child C'),
+      createActivity('4', 9, 0, 10, 0, 'Child D'),
+      createActivity('5', 9, 0, 10, 0, 'Child E'),
+      createActivity('6', 9, 0, 10, 0, 'Child F'),
+    ];
+
+    const overlapGroups = detectOverlaps(activities);
+    const layouts = calculateLayout(overlapGroups, 4);
+
+    const allOverflow = getAllOverflowActivities(layouts, activities);
+    
+    expect(allOverflow).toHaveLength(2);
+    expect(allOverflow.map(a => a.activityId).sort()).toEqual(['5', '6']);
+  });
+
+  it('should correctly identify displayable activities', () => {
+    const activities = [
+      createActivity('1', 9, 0, 10, 0, 'Child A'),
+      createActivity('2', 9, 0, 10, 0, 'Child B'),
+      createActivity('3', 9, 0, 10, 0, 'Child C'),
+      createActivity('4', 9, 0, 10, 0, 'Child D'),
+      createActivity('5', 9, 0, 10, 0, 'Child E'),
+    ];
+
+    const overlapGroups = detectOverlaps(activities);
+    const layouts = calculateLayout(overlapGroups, 4);
+
+    // First 4 should be displayable
+    expect(shouldDisplayActivity('1', layouts)).toBe(true);
+    expect(shouldDisplayActivity('2', layouts)).toBe(true);
+    expect(shouldDisplayActivity('3', layouts)).toBe(true);
+    expect(shouldDisplayActivity('4', layouts)).toBe(true);
+    
+    // 5th should not be displayable
+    expect(shouldDisplayActivity('5', layouts)).toBe(false);
+  });
+
+  it('should handle partial overlap with overflow', () => {
+    // Activities 1-5 overlap at 9:00-10:00
+    // Activity 6 overlaps only with activity 1 at 10:00-11:00
+    const activities = [
+      createActivity('1', 9, 0, 11, 0, 'Child A'),
+      createActivity('2', 9, 0, 10, 0, 'Child B'),
+      createActivity('3', 9, 0, 10, 0, 'Child C'),
+      createActivity('4', 9, 0, 10, 0, 'Child D'),
+      createActivity('5', 9, 0, 10, 0, 'Child E'),
+      createActivity('6', 10, 0, 11, 0, 'Child F'),
+    ];
+
+    const overlapGroups = detectOverlaps(activities);
+    const layouts = calculateLayout(overlapGroups, 4);
+
+    // At 9:30, should have 1 overflow (activity 5)
+    const count930 = getOverflowCount(570, layouts);
+    expect(count930).toBe(1);
+
+    // At 10:30, should have 0 overflow (only activities 1 and 6)
+    const count1030 = getOverflowCount(630, layouts);
+    expect(count1030).toBe(0);
+
+    // Get overflow for 9:00-10:00 segment
+    const overflow9to10 = getOverflowActivities(540, 600, layouts, activities);
+    expect(overflow9to10).toHaveLength(1);
+    expect(overflow9to10[0].activityId).toBe('5');
+
+    // Get overflow for 10:00-11:00 segment
+    const overflow10to11 = getOverflowActivities(600, 660, layouts, activities);
+    expect(overflow10to11).toHaveLength(0);
   });
 });

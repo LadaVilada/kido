@@ -6,6 +6,7 @@ import { IOSInstallPrompt } from "@/components/pwa/IOSInstallPrompt";
 import { ConnectionStatus } from "@/components/common/ConnectionStatus";
 import { Navigation } from "@/components/common/Navigation";
 import { NotificationPrompt } from "@/components/notifications/NotificationPrompt";
+import { TouchFixInitializer } from "@/components/common/TouchFixInitializer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -75,6 +76,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <TouchFixInitializer />
         <AuthProvider>
           <Navigation />
           <ConnectionStatus />
