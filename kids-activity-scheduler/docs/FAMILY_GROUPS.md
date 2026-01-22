@@ -150,6 +150,30 @@ match /activities/{activityId} {
 5. **Secure**: Only family members can access family data
 6. **Invitations**: Pending invitations are stored in the family document with unique tokens for secure acceptance
 
+### Client-Side vs Server-Side Authorization
+
+**Important**: The application follows a clear separation of concerns for security:
+
+**Client-Side Services** (TypeScript):
+- Perform input validation (required fields, formats, data types)
+- Verify referenced resources exist (e.g., child exists before creating activity)
+- Provide user-friendly error messages
+- **Do NOT enforce authorization checks** - this is delegated to Firestore rules
+
+**Server-Side Security Rules** (Firestore):
+- Enforce ALL authorization checks (family membership, ownership)
+- Validate data integrity at the database level
+- Prevent unauthorized access even if client code is bypassed
+- Act as the single source of truth for security
+
+**Example**: When creating an activity, the `ActivitiesService` verifies the child exists but does NOT check if the child belongs to the user's family. This check is performed by Firestore security rules, which ensure both the user and child belong to the same family before allowing the write operation.
+
+This architecture ensures:
+- Security cannot be bypassed by modifying client code
+- Good user experience through client-side validation
+- Consistent authorization enforcement at the database level
+- Simplified client code that focuses on business logic
+
 ## Invitation System
 
 ### How Invitations Work

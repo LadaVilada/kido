@@ -71,6 +71,8 @@ match /users/{userId} {
     - The target user doesn't have a `familyId` yet (adding to family)
     - The `familyId` is being set to null (removing from family)
 
+**Note**: Client-side services rely on Firestore security rules for authorization. For example, when creating activities, the service verifies the child exists but delegates family membership validation to Firestore rules, which check that both the user and child belong to the same family.
+
 ### Family Documents
 ```javascript
 match /families/{familyId} {
@@ -119,13 +121,13 @@ match /activities/{activityId} {
 
 ### Family-Based Access Control
 
-The security model is built around families:
+The security model is built around families with a clear separation of concerns:
 
 1. **User Registration**: When a user signs up, a user document is created
 2. **Family Creation**: User creates or joins a family
 3. **Family ID Storage**: User's `familyId` is stored in their user document
 4. **Resource Access**: All children and activities are linked to a `familyId`
-5. **Access Validation**: Rules check if user's family matches resource's family
+5. **Access Validation**: Firestore security rules check if user's family matches resource's family
 
 ### Data Flow
 
@@ -141,6 +143,22 @@ isFamilyMember() validates access
 Access Granted/Denied
 ```
 
+### Client-Side vs Server-Side Validation
+
+**Client-Side Services** (TypeScript):
+- Perform basic validation (required fields, data formats)
+- Verify referenced resources exist (e.g., child exists before creating activity)
+- Provide user-friendly error messages
+- **Do NOT enforce authorization** - this is delegated to Firestore rules
+
+**Server-Side Security Rules** (Firestore):
+- Enforce all authorization checks (family membership, ownership)
+- Validate data integrity at the database level
+- Prevent unauthorized access even if client code is bypassed
+- Act as the single source of truth for security
+
+This separation ensures security cannot be bypassed by modifying client code, while still providing good UX through client-side validation.
+
 ## Benefits of Current Design
 
 1. **Efficient**: Single document lookup (`getUserFamily()`) instead of array operations for membership checks
@@ -151,6 +169,8 @@ Access Granted/Denied
 6. **Simple**: Two helper functions provide all necessary access control logic
 7. **Family Management**: Supports adding/removing family members by allowing controlled updates to user `familyId` fields
 8. **User Discovery**: Authenticated users can query other users by email to invite them to families
+9. **Defense in Depth**: Security enforced at database level, independent of client-side code
+10. **Clear Separation**: Client services handle validation and UX; Firestore rules handle authorization
 
 ### Testing Security Rules
 
@@ -189,6 +209,12 @@ firebase emulators:start --only firestore
    - Removed family member loses access immediately
    - Deleted family makes all resources inaccessible
    - Cannot add user to family if they already belong to another family
+
+6. **Client-Side Service Behavior**
+   - Services verify resources exist before operations
+   - Services provide user-friendly error messages
+   - Services do NOT enforce authorization (delegated to Firestore)
+   - Firestore rules reject unauthorized operations even if client allows them
 
 ## Deployment
 

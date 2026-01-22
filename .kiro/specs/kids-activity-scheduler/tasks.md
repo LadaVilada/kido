@@ -44,7 +44,12 @@
     - Implement ProtectedRoute wrapper component
     - _Requirements: 6.1, 6.2_
 
-  - [x]* 2.3 Write authentication tests
+  - [x] 2.3 Write authentication tests
+
+
+
+
+
 
 
     - Create unit tests for authentication utilities
@@ -99,7 +104,18 @@
     - Implement edit and delete functionality
     - _Requirements: 1.2, 1.3, 1.5_
 
-  - [ ]* 4.3 Create child management tests
+  - [x] 4.3 Create child management tests
+
+
+
+
+
+
+
+
+
+
+
     - Write unit tests for child CRUD operations
     - Test color assignment and validation
     - _Requirements: 1.2, 1.3, 1.5_
@@ -144,8 +160,13 @@
     - Implement date/time calculations with timezone support
     - Build ActivityOccurrence computation functions
     - _Requirements: 2.3, 2.4_
+-
 
-  - [ ]* 5.4 Write activity management tests
+  - [x] 5.4 Write activity management tests
+
+
+
+
     - Test activity CRUD operations and validation
     - Unit tests for recurrence calculation logic
     - Test timezone handling and date computations
@@ -182,7 +203,15 @@
     - Add toggle between week and day views
     - _Requirements: 3.5_
 
-  - [ ]* 6.4 Write calendar view tests
+  - [x] 6.4 Write calendar view tests
+
+
+
+
+
+
+
+
     - Test activity positioning and color coding
     - Unit tests for date navigation logic
     - Test real-time data updates in calendar views

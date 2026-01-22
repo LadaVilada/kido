@@ -139,6 +139,7 @@ See [E2E_INTEGRATION_TEST.md](docs/E2E_INTEGRATION_TEST.md) for comprehensive te
 - [PWA Configuration](docs/PWA.md)
 - [Family Groups Feature](docs/FAMILY_GROUPS.md)
 - [Firestore Security Rules](docs/FIRESTORE_RULES.md)
+- [Security Architecture](docs/SECURITY_ARCHITECTURE.md)
 
 ## Contributing
 
