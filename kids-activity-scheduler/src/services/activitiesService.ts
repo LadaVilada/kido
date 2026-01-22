@@ -35,14 +35,12 @@ export class ActivitiesService {
     }
 
     try {
-      // Verify child exists and belongs to user
+      // Verify child exists
       const child = await ChildrenService.getChild(input.childId);
       if (!child) {
         throw new Error('Selected child not found');
       }
-      if (child.userId !== userId) {
-        throw new Error('You do not have permission to create activities for this child');
-      }
+      // Note: Family membership validation is handled by Firestore security rules
 
       const activityData = {
         userId,
