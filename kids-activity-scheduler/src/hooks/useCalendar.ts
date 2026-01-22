@@ -169,13 +169,17 @@ export const useCalendar = (options: UseCalendarOptions = {}): UseCalendarReturn
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, isLoading, refreshData]);
 
+  // Memoize the initial date timestamp to prevent infinite loops
+  const initialTimestamp = useMemo(() => initialDate.getTime(), [initialDate]);
+
   // Update current date when initialDate changes (only if it's actually different)
   useEffect(() => {
-    // Only update if the date is actually different (compare timestamps)
-    if (initialDate.getTime() !== currentDate.getTime()) {
-      setCurrentDate(initialDate);
+    const currentTimestamp = currentDate.getTime();
+    
+    if (initialTimestamp !== currentTimestamp) {
+      setCurrentDate(new Date(initialTimestamp));
     }
-  }, [initialDate.getTime()]); // Use timestamp to avoid infinite loop
+  }, [initialTimestamp]); // Only depend on the memoized timestamp
 
   return {
     // Current state
