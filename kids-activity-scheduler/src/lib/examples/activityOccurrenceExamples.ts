@@ -26,14 +26,14 @@ import {
 const exampleChildren: Child[] = [
   {
     id: 'child-1',
-    userId: 'user-123',
+    familyId: 'family-123',
     name: 'Emma',
     color: '#3b82f6',
     createdAt: Timestamp.now()
   },
   {
     id: 'child-2',
-    userId: 'user-123',
+    familyId: 'family-123',
     name: 'Liam',
     color: '#ef4444',
     createdAt: Timestamp.now()
@@ -43,7 +43,7 @@ const exampleChildren: Child[] = [
 const exampleActivities: Activity[] = [
   {
     id: 'activity-1',
-    userId: 'user-123',
+    familyId: 'family-123',
     childId: 'child-1',
     title: 'Soccer Practice',
     location: 'Community Park',
@@ -55,7 +55,7 @@ const exampleActivities: Activity[] = [
   },
   {
     id: 'activity-2',
-    userId: 'user-123',
+    familyId: 'family-123',
     childId: 'child-1',
     title: 'Piano Lessons',
     location: 'Music School',
@@ -67,7 +67,7 @@ const exampleActivities: Activity[] = [
   },
   {
     id: 'activity-3',
-    userId: 'user-123',
+    familyId: 'family-123',
     childId: 'child-2',
     title: 'Basketball Practice',
     location: 'School Gym',
