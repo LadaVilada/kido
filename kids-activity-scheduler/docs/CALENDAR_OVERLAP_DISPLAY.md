@@ -494,28 +494,93 @@ The layout engine uses automatic memoization:
 
 Located in `src/lib/__tests__/calendarLayout.test.ts`:
 
-- Overlap detection with various scenarios
+**Overlap Detection Tests:**
+- No overlaps scenario
+- Partial overlaps
+- Complete overlaps
+- Multiple overlap groups
+- Edge cases (identical start/end times)
+
+**Layout Calculation Tests:**
+- 2-activity overlap (50% width each)
+- 3-activity overlap (33.33% width each)
+- 4-activity overlap (25% width each)
+- Dynamic width changes across time segments
+- Overflow handling (more than 4 activities)
+
+**Width and Position Tests:**
+- Percentage-based width calculations
+- Left position calculations
 - Column assignment algorithm
-- Width and position calculations
-- Overflow handling
-- Cache behavior
+- Full-width for non-overlapping activities
+
+**Overflow Tests:**
+- Overflow detection (>4 activities)
+- Overflow count at specific times
+- Overflow activities retrieval
+- Partial overlap with overflow
 
 ### Integration Tests
 
 Located in component test files:
 
-- `WeekView.test.tsx` - Week view with overlaps
-- `DayView.test.tsx` - Day view with overlaps
-- `ActivityBlock.test.tsx` - Activity rendering with layouts
+**WeekView Tests** (`src/components/calendar/__tests__/WeekView.test.tsx`):
+- Activity positioning and color coding
+- Multiple activities on same day
+- Activities across multiple days
+- Date navigation
+- Activity click handlers
+- Overlap display with side-by-side layout
+- Overflow indicators
+- Mobile scroll behavior
+
+**DayView Tests** (`src/components/calendar/__tests__/DayView.test.tsx`):
+- Activity display with color coding
+- Activity summary section
+- Empty state handling
+- Date navigation
+- Activity click handlers
+- Overlap detection and layout
+- Overflow indicators
+- Mobile scroll behavior
+- Current time indicator
+
+**ActivityBlock Tests** (`src/components/calendar/__tests__/ActivityBlock.test.tsx`):
+- Color coding from child color
+- Content display (title, child name, location, time, duration)
+- Click handlers
+- Keyboard events
+- Custom styling
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test file
+npm test -- src/lib/__tests__/calendarLayout.test.ts
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run with coverage
+npm test -- --coverage
+```
 
 ### Test Coverage
 
-Run tests with:
-```bash
-npm run test
-```
+Current test coverage includes:
+- ✅ Overlap detection algorithm
+- ✅ Column assignment logic
+- ✅ Width and position calculations
+- ✅ Overflow handling
+- ✅ Component rendering
+- ✅ User interactions
+- ✅ Mobile responsiveness
+- ✅ Edge cases and error scenarios
 
----
+See [TESTING.md](./TESTING.md) for comprehensive testing guide.
 
 ## Troubleshooting
 
@@ -527,6 +592,7 @@ npm run test
 1. Verify activities have overlapping times
 2. Check that layout is being passed to ActivityBlock
 3. Ensure CSS positioning is not overridden
+4. Clear layout caches: `clearLayoutCaches()`
 
 ### Overflow Indicator Not Showing
 
@@ -536,6 +602,7 @@ npm run test
 1. Verify more than 4 activities overlap at the same time
 2. Check that overflow activities are being filtered correctly
 3. Ensure OverflowIndicator component is rendered
+4. Check console for JavaScript errors
 
 ### Performance Issues
 
@@ -546,6 +613,7 @@ npm run test
 2. Verify activities have stable IDs
 3. Consider reducing number of visible days
 4. Profile with React DevTools
+5. Check that memoization is working (layouts should be cached)
 
 ### Mobile Scroll Not Working
 
@@ -556,6 +624,17 @@ npm run test
 2. Check that container has `min-w-max` or similar
 3. Test on actual device (not just browser resize)
 4. Ensure touch-action CSS is not preventing scroll
+
+### Test Failures
+
+**Issue**: Tests failing after code changes
+
+**Solutions**:
+1. Run `npm test` to see specific failures
+2. Check if test data matches new requirements
+3. Update test expectations if behavior changed intentionally
+4. Clear test caches: `vi.clearAllMocks()`
+5. Verify mock implementations are correct
 
 ---
 

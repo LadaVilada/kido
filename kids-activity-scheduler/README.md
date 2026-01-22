@@ -127,10 +127,33 @@ kids-activity-scheduler/
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
+- `npm test` - Run tests (single run)
+- `npm run test:watch` - Run tests in watch mode
 
 ## Testing
 
-See [E2E_INTEGRATION_TEST.md](docs/E2E_INTEGRATION_TEST.md) for comprehensive testing guide.
+The project uses **Vitest** with **React Testing Library** for comprehensive testing coverage.
+
+### Quick Start
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run specific test file
+npm test -- src/lib/__tests__/calendarLayout.test.ts
+```
+
+### Test Coverage
+- ✅ Calendar layout and overlap detection
+- ✅ Activity management and scheduling
+- ✅ PWA features (offline, caching, installation)
+- ✅ Authentication and user management
+- ✅ Component rendering and interactions
+
+See [TESTING.md](docs/TESTING.md) for detailed testing guide and [E2E_INTEGRATION_TEST.md](docs/E2E_INTEGRATION_TEST.md) for end-to-end testing.
 
 ## Documentation
 
@@ -138,14 +161,18 @@ See [E2E_INTEGRATION_TEST.md](docs/E2E_INTEGRATION_TEST.md) for comprehensive te
 - [Calendar Overlap Display Guide](docs/USER_GUIDE_CALENDAR_OVERLAPS.md)
 
 ### Technical Documentation
+- [Testing Guide](docs/TESTING.md) - Unit, integration, and component testing
 - [Deployment Guide](docs/DEPLOYMENT.md)
 - [E2E Testing Guide](docs/E2E_INTEGRATION_TEST.md)
 - [Notification Setup](docs/NOTIFICATION_SETUP.md)
 - [PWA Configuration](docs/PWA.md)
+- [PWA Testing Guide](docs/PWA_TESTING_GUIDE.md)
 - [Family Groups Feature](docs/FAMILY_GROUPS.md)
 - [Calendar Overlap Display](docs/CALENDAR_OVERLAP_DISPLAY.md)
 - [Firestore Security Rules](docs/FIRESTORE_RULES.md)
 - [Security Architecture](docs/SECURITY_ARCHITECTURE.md)
+- [Touch/Click Fixes](docs/TOUCH_FIXES_SUMMARY.md)
+- [Troubleshooting Touch Issues](docs/TROUBLESHOOTING_TOUCH_ISSUES.md)
 
 ## Contributing
 
