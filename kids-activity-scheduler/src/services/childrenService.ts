@@ -104,14 +104,12 @@ export class ChildrenService {
     }
 
     try {
-      // Verify child belongs to user
+      // Verify child exists
       const existingChild = await this.getChild(childId);
       if (!existingChild) {
         throw new Error('Child not found');
       }
-      if (existingChild.userId !== userId) {
-        throw new Error('You do not have permission to update this child');
-      }
+      // Note: Family membership validation is handled by Firestore security rules
 
       // Check for name conflicts (if name is being updated)
       if (input.name && input.name.trim() !== existingChild.name) {
@@ -154,14 +152,12 @@ export class ChildrenService {
    */
   static async deleteChild(childId: string, userId: string): Promise<void> {
     try {
-      // Verify child belongs to user
+      // Verify child exists
       const existingChild = await this.getChild(childId);
       if (!existingChild) {
         throw new Error('Child not found');
       }
-      if (existingChild.userId !== userId) {
-        throw new Error('You do not have permission to delete this child');
-      }
+      // Note: Family membership validation is handled by Firestore security rules
 
       // TODO: Check if child has associated activities and handle accordingly
       // For now, we'll allow deletion (activities will become orphaned)

@@ -123,24 +123,20 @@ export class ActivitiesService {
     }
 
     try {
-      // Verify activity belongs to user
+      // Verify activity exists
       const existingActivity = await this.getActivity(activityId);
       if (!existingActivity) {
         throw new Error('Activity not found');
       }
-      if (existingActivity.userId !== userId) {
-        throw new Error('You do not have permission to update this activity');
-      }
+      // Note: Family membership validation is handled by Firestore security rules
 
-      // If childId is being updated, verify the new child belongs to user
+      // If childId is being updated, verify the new child exists
       if (input.childId && input.childId !== existingActivity.childId) {
         const child = await ChildrenService.getChild(input.childId);
         if (!child) {
           throw new Error('Selected child not found');
         }
-        if (child.userId !== userId) {
-          throw new Error('You do not have permission to assign activities to this child');
-        }
+        // Note: Family membership validation is handled by Firestore security rules
       }
 
       const updateData: Partial<Activity> = {};
@@ -163,14 +159,12 @@ export class ActivitiesService {
    */
   static async deleteActivity(activityId: string, userId: string): Promise<void> {
     try {
-      // Verify activity belongs to user
+      // Verify activity exists
       const existingActivity = await this.getActivity(activityId);
       if (!existingActivity) {
         throw new Error('Activity not found');
       }
-      if (existingActivity.userId !== userId) {
-        throw new Error('You do not have permission to delete this activity');
-      }
+      // Note: Family membership validation is handled by Firestore security rules
 
       await deleteDocument(COLLECTIONS.ACTIVITIES, activityId);
     } catch (error: any) {
