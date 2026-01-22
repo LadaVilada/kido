@@ -48,12 +48,13 @@ interface UseCalendarReturn {
 
 export const useCalendar = (options: UseCalendarOptions = {}): UseCalendarReturn => {
   const {
-    initialDate = new Date(),
+    initialDate,
     autoRefresh = true,
     refreshInterval = 60000, // 1 minute
   } = options;
 
-  const [currentDate, setCurrentDate] = useState(initialDate);
+  // Initialize with a stable date - only create new Date() once
+  const [currentDate, setCurrentDate] = useState(() => initialDate || new Date());
   
   // Fetch activities and children data
   const { 
@@ -170,10 +171,12 @@ export const useCalendar = (options: UseCalendarOptions = {}): UseCalendarReturn
   }, [autoRefresh, refreshInterval, isLoading, refreshData]);
 
   // Memoize the initial date timestamp to prevent infinite loops
-  const initialTimestamp = useMemo(() => initialDate.getTime(), [initialDate]);
+  const initialTimestamp = useMemo(() => initialDate?.getTime(), [initialDate]);
 
   // Update current date when initialDate changes (only if it's actually different)
   useEffect(() => {
+    if (!initialTimestamp) return; // Skip if no initialDate provided
+    
     const currentTimestamp = currentDate.getTime();
     
     if (initialTimestamp !== currentTimestamp) {

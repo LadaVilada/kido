@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createUserDocument, getUserData } from '@/lib/auth';
 import { User as UserType } from '@/types';
@@ -20,15 +20,18 @@ export const useAuthState = (): UseAuthStateReturn => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Memoize the user ID to prevent infinite loops
+  const userId = useMemo(() => firebaseUser?.uid, [firebaseUser?.uid]);
+
   useEffect(() => {
     const handleUserChange = async () => {
-      if (firebaseUser) {
+      if (userId && firebaseUser) {
         try {
           // Create user document if it doesn't exist
           await createUserDocument(firebaseUser);
           
           // Get user data from Firestore
-          const data = await getUserData(firebaseUser.uid);
+          const data = await getUserData(userId);
           setUserData(data);
           setError(null);
         } catch (err) {
@@ -47,7 +50,7 @@ export const useAuthState = (): UseAuthStateReturn => {
     if (!authLoading) {
       handleUserChange();
     }
-  }, [firebaseUser, authLoading]);
+  }, [userId, authLoading, firebaseUser]);
 
   return {
     user: userData,
