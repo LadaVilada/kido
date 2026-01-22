@@ -167,6 +167,9 @@ export const generateOccurrencesForActivity = (
   const [startHour, startMinute] = activity.startTime.split(':').map(Number);
   const [endHour, endMinute] = activity.endTime.split(':').map(Number);
   
+  // Debug logging
+  console.log(`Activity: ${activity.title}, Start: ${activity.startTime} (${startHour}:${startMinute}), End: ${activity.endTime} (${endHour}:${endMinute})`);
+  
   // Iterate through each day in the range
   const currentDate = new Date(startDate);
   currentDate.setHours(0, 0, 0, 0);

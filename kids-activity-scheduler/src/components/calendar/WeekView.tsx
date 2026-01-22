@@ -186,15 +186,26 @@ export const WeekView: React.FC<WeekViewProps> = ({
     const gridEndMinutes = 22 * 60; // 10 PM
     const totalGridMinutes = gridEndMinutes - gridStartMinutes;
     
-    // Calculate position as percentage
-    const top = Math.max(0, ((startMinutes - gridStartMinutes) / totalGridMinutes) * 100);
-    const height = Math.min(100 - top, ((endMinutes - startMinutes) / totalGridMinutes) * 100);
+    // Calculate the slot height based on window width
+    const slotHeight = windowWidth < 640 ? 48 : 64;
+    const totalSlots = 17; // 6 AM to 10 PM = 17 hours
+    const totalHeight = totalSlots * slotHeight;
+    
+    // Calculate position in pixels
+    const minutesFromStart = startMinutes - gridStartMinutes;
+    const durationMinutes = endMinutes - startMinutes;
+    
+    const topPx = Math.max(0, (minutesFromStart / totalGridMinutes) * totalHeight);
+    const heightPx = Math.max(28, (durationMinutes / totalGridMinutes) * totalHeight);
+    
+    // Debug logging
+    console.log(`Position for ${occurrence.title}: startMinutes=${startMinutes}, top=${topPx}px, height=${heightPx}px`);
     
     return {
-      top: `${top}%`,
-      height: `${height}%`,
+      top: `${topPx}px`,
+      height: `${heightPx}px`,
     };
-  }, []);
+  }, [windowWidth]);
 
   const isToday = (date: Date) => {
     const today = new Date();
