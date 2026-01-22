@@ -122,11 +122,6 @@ export const ActivityBlock: React.FC<ActivityBlockProps> = React.memo(({
           <div className="text-[8px] sm:text-xs opacity-80 truncate">
             {timeRange}
           </div>
-          {occurrence.location && (
-            <div className="text-[8px] sm:text-xs opacity-75 truncate mt-0.5">
-              📍 {occurrence.location}
-            </div>
-          )}
         </div>
         <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 text-[8px] sm:text-xs opacity-70 font-medium">
           {duration}m
@@ -181,11 +176,6 @@ export const ActivityBlock: React.FC<ActivityBlockProps> = React.memo(({
                 <div className="text-[8px] sm:text-xs opacity-80 truncate">
                   {timeRange}
                 </div>
-                {occurrence.location && (
-                  <div className="text-[8px] sm:text-xs opacity-75 truncate mt-0.5">
-                    📍 {occurrence.location}
-                  </div>
-                )}
                 <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 text-[8px] sm:text-xs opacity-70 font-medium">
                   {duration}m
                 </div>
