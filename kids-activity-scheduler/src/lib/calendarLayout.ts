@@ -1,6 +1,25 @@
 import { ActivityOccurrence } from '@/types';
 
 /**
+ * Cache for overlap detection results
+ * Key: JSON stringified sorted activity IDs
+ * Value: OverlapGroup array
+ */
+const overlapCache = new Map<string, OverlapGroup[]>();
+
+/**
+ * Cache for layout calculation results
+ * Key: JSON stringified sorted activity IDs + maxColumns
+ * Value: ActivityLayout array
+ */
+const layoutCache = new Map<string, ActivityLayout[]>();
+
+/**
+ * Maximum cache size to prevent memory leaks
+ */
+const MAX_CACHE_SIZE = 100;
+
+/**
  * Represents a time segment where a specific number of activities overlap
  */
 export interface TimeSegment {
@@ -65,6 +84,42 @@ export function minutesToTimeString(minutes: number): string {
 }
 
 /**
+ * Generates a cache key from activities
+ * Includes activity IDs, start times, and end times for uniqueness
+ */
+function generateCacheKey(activities: ActivityOccurrence[]): string {
+  // Sort by activityId to ensure consistent cache keys
+  const sortedActivities = [...activities].sort((a, b) => 
+    a.activityId.localeCompare(b.activityId)
+  );
+  
+  // Include activity ID, start time, and end time in the key
+  const key = sortedActivities
+    .map(a => `${a.activityId}:${a.startDateTime.getTime()}:${a.endDateTime.getTime()}`)
+    .join('|');
+  
+  return key;
+}
+
+/**
+ * Clears the oldest entries from cache if it exceeds MAX_CACHE_SIZE
+ */
+function pruneCache(cache: Map<string, any>): void {
+  if (cache.size > MAX_CACHE_SIZE) {
+    const keysToDelete = Array.from(cache.keys()).slice(0, cache.size - MAX_CACHE_SIZE);
+    keysToDelete.forEach(key => cache.delete(key));
+  }
+}
+
+/**
+ * Clears all caches (useful for testing or manual cache invalidation)
+ */
+export function clearLayoutCaches(): void {
+  overlapCache.clear();
+  layoutCache.clear();
+}
+
+/**
  * Checks if two time ranges overlap
  */
 export function timeRangesOverlap(
@@ -78,6 +133,7 @@ export function timeRangesOverlap(
 
 /**
  * Detects overlapping activities and groups them
+ * Results are memoized for performance
  * 
  * Algorithm:
  * 1. Create time points for all activity starts and ends
@@ -91,6 +147,13 @@ export function detectOverlaps(
 ): OverlapGroup[] {
   if (activities.length === 0) {
     return [];
+  }
+
+  // Check cache first
+  const cacheKey = generateCacheKey(activities);
+  const cached = overlapCache.get(cacheKey);
+  if (cached) {
+    return cached;
   }
 
   // Sort activities by start time for consistent processing
@@ -228,6 +291,10 @@ export function detectOverlaps(
     group.segments.sort((a, b) => a.startMinutes - b.startMinutes);
   });
 
+  // Cache the result
+  overlapCache.set(cacheKey, groups);
+  pruneCache(overlapCache);
+
   return groups;
 }
 
@@ -289,6 +356,7 @@ function assignColumns(
 
 /**
  * Calculates the layout (column positions and widths) for activities
+ * Results are memoized for performance
  * 
  * @param overlapGroups - Groups of overlapping activities
  * @param maxColumns - Maximum number of columns to display (default: 4)
@@ -298,6 +366,16 @@ export function calculateLayout(
   overlapGroups: OverlapGroup[],
   maxColumns: number = 4
 ): ActivityLayout[] {
+  // Generate cache key from all activities in overlap groups
+  const allActivities = overlapGroups.flatMap(group => group.activities);
+  const cacheKey = `${generateCacheKey(allActivities)}-${maxColumns}`;
+  
+  // Check cache first
+  const cached = layoutCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const layouts: ActivityLayout[] = [];
 
   overlapGroups.forEach((group) => {
@@ -344,6 +422,10 @@ export function calculateLayout(
       });
     });
   });
+
+  // Cache the result
+  layoutCache.set(cacheKey, layouts);
+  pruneCache(layoutCache);
 
   return layouts;
 }

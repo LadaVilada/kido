@@ -185,4 +185,53 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  
+  /* Calendar overlap display mobile styles */
+  @media (max-width: 639px) {
+    /* Reduce padding and margins for calendar components */
+    .calendar-mobile-compact .activity-block {
+      @apply p-1 min-w-[50px];
+    }
+    
+    .calendar-mobile-compact .time-label {
+      @apply text-[9px] pr-1;
+    }
+    
+    .calendar-mobile-compact .day-header {
+      @apply px-0.5 text-[10px];
+    }
+    
+    /* Adjust minimum widths for overlapping activities */
+    .calendar-mobile-compact .activity-block-overlap {
+      min-width: 50px !important;
+    }
+    
+    /* Ensure horizontal scroll is smooth */
+    .calendar-day-column {
+      scroll-snap-type: x proximity;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Optimize touch targets for mobile */
+    .calendar-mobile-compact .overflow-indicator {
+      @apply min-h-[44px] text-xs px-2 py-2;
+    }
+    
+    /* Reduce spacing in activity blocks */
+    .calendar-mobile-compact .activity-content {
+      @apply space-y-0;
+    }
+    
+    /* Compact time grid */
+    .calendar-mobile-compact .time-slot {
+      @apply h-12;
+    }
+  }
+  
+  /* Tablet breakpoint adjustments */
+  @media (min-width: 640px) and (max-width: 1023px) {
+    .calendar-tablet .activity-block {
+      @apply p-1.5 min-w-[60px];
+    }
+  }
 }

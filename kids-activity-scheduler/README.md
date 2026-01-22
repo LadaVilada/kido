@@ -8,6 +8,7 @@ A Progressive Web Application (PWA) that enables parents to efficiently manage t
 - 👨‍👩‍👧‍👦 Family groups with email invitations for co-parents and caregivers
 - 👶 Child profile management with color coding
 - 📅 Weekly calendar view for activity scheduling
+- 📊 Smart overlap display - see multiple activities side-by-side
 - 🔔 Push notifications for activity reminders
 - 📱 PWA support for mobile installation
 - 🌐 Offline functionality
@@ -133,11 +134,16 @@ See [E2E_INTEGRATION_TEST.md](docs/E2E_INTEGRATION_TEST.md) for comprehensive te
 
 ## Documentation
 
+### User Guides
+- [Calendar Overlap Display Guide](docs/USER_GUIDE_CALENDAR_OVERLAPS.md)
+
+### Technical Documentation
 - [Deployment Guide](docs/DEPLOYMENT.md)
 - [E2E Testing Guide](docs/E2E_INTEGRATION_TEST.md)
 - [Notification Setup](docs/NOTIFICATION_SETUP.md)
 - [PWA Configuration](docs/PWA.md)
 - [Family Groups Feature](docs/FAMILY_GROUPS.md)
+- [Calendar Overlap Display](docs/CALENDAR_OVERLAP_DISPLAY.md)
 - [Firestore Security Rules](docs/FIRESTORE_RULES.md)
 - [Security Architecture](docs/SECURITY_ARCHITECTURE.md)
 

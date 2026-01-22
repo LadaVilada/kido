@@ -6,6 +6,15 @@ import { formatOccurrenceTimeRange, getOccurrenceDuration } from '@/lib/activity
 import { getContrastingTextHex, darkenColor } from '@/lib/colorUtils';
 import { ActivityLayout } from '@/lib/calendarLayout';
 
+/**
+ * Props for the ActivityBlock component
+ * 
+ * @property occurrence - The activity occurrence data to display
+ * @property onClick - Optional callback when the activity is clicked
+ * @property style - Optional additional CSS styles
+ * @property className - Optional additional CSS classes
+ * @property layout - Optional layout information for positioning when activities overlap
+ */
 interface ActivityBlockProps {
   occurrence: ActivityOccurrence;
   onClick?: (occurrence: ActivityOccurrence) => void;
@@ -14,7 +23,36 @@ interface ActivityBlockProps {
   layout?: ActivityLayout;
 }
 
-export const ActivityBlock: React.FC<ActivityBlockProps> = ({
+/**
+ * ActivityBlock Component
+ * 
+ * Renders a single activity block in the calendar with support for overlap display.
+ * 
+ * Features:
+ * - Single segment rendering for activities with consistent width
+ * - Multi-segment rendering for activities that change width due to varying overlaps
+ * - Preserves child-specific color coding
+ * - Touch-optimized with minimum 44x44px targets
+ * - Keyboard accessible with Enter/Space activation
+ * - Memoized for performance
+ * 
+ * @example
+ * // Basic usage without overlap
+ * <ActivityBlock
+ *   occurrence={activity}
+ *   onClick={handleClick}
+ * />
+ * 
+ * @example
+ * // With overlap layout
+ * const layout = getActivityLayout(activity.activityId, layouts);
+ * <ActivityBlock
+ *   occurrence={activity}
+ *   onClick={handleClick}
+ *   layout={layout}
+ * />
+ */
+export const ActivityBlock: React.FC<ActivityBlockProps> = React.memo(({
   occurrence,
   onClick,
   style,
@@ -61,10 +99,10 @@ export const ActivityBlock: React.FC<ActivityBlockProps> = ({
     return (
       <div
         className={`
-          relative p-1.5 sm:p-2 rounded-md cursor-pointer
+          activity-block relative p-1 sm:p-2 rounded-md cursor-pointer
           hover:opacity-90 active:opacity-80 transition-all duration-200
           shadow-sm border-l-4 touch-action-none
-          min-h-[44px] min-w-[60px]
+          min-h-[44px] min-w-[50px] sm:min-w-[60px]
           ${className}
         `}
         style={segmentStyle}
@@ -74,21 +112,23 @@ export const ActivityBlock: React.FC<ActivityBlockProps> = ({
         tabIndex={0}
         onKeyDown={handleKeyDown}
       >
-        <div className="font-semibold truncate mb-0.5 sm:mb-1 text-[10px] sm:text-xs">
-          {occurrence.title}
-        </div>
-        <div className="text-[9px] sm:text-xs opacity-90 truncate font-medium">
-          {occurrence.childName}
-        </div>
-        <div className="text-[9px] sm:text-xs opacity-80 truncate">
-          {timeRange}
-        </div>
-        {occurrence.location && (
-          <div className="text-[9px] sm:text-xs opacity-75 truncate mt-0.5 sm:mt-1">
-            📍 {occurrence.location}
+        <div className="activity-content">
+          <div className="font-semibold truncate mb-0.5 text-[9px] sm:text-xs">
+            {occurrence.title}
           </div>
-        )}
-        <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 text-[9px] sm:text-xs opacity-70 font-medium">
+          <div className="text-[8px] sm:text-xs opacity-90 truncate font-medium">
+            {occurrence.childName}
+          </div>
+          <div className="text-[8px] sm:text-xs opacity-80 truncate">
+            {timeRange}
+          </div>
+          {occurrence.location && (
+            <div className="text-[8px] sm:text-xs opacity-75 truncate mt-0.5">
+              📍 {occurrence.location}
+            </div>
+          )}
+        </div>
+        <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 text-[8px] sm:text-xs opacity-70 font-medium">
           {duration}m
         </div>
       </div>
@@ -113,10 +153,10 @@ export const ActivityBlock: React.FC<ActivityBlockProps> = ({
           <div
             key={`${occurrence.activityId}-segment-${index}`}
             className={`
-              relative p-1.5 sm:p-2 cursor-pointer
+              activity-block relative p-1 sm:p-2 cursor-pointer
               hover:opacity-90 active:opacity-80 transition-all duration-200
               shadow-sm border-l-4 touch-action-none
-              min-h-[44px] min-w-[60px]
+              min-h-[44px] min-w-[50px] sm:min-w-[60px]
               ${isFirst ? 'rounded-t-md' : ''}
               ${isLast ? 'rounded-b-md' : ''}
               ${!isFirst && !isLast ? 'border-t border-t-white/20' : ''}
@@ -131,30 +171,30 @@ export const ActivityBlock: React.FC<ActivityBlockProps> = ({
           >
             {/* Show full content only in first segment */}
             {isFirst && (
-              <>
-                <div className="font-semibold truncate mb-0.5 sm:mb-1 text-[10px] sm:text-xs">
+              <div className="activity-content">
+                <div className="font-semibold truncate mb-0.5 text-[9px] sm:text-xs">
                   {occurrence.title}
                 </div>
-                <div className="text-[9px] sm:text-xs opacity-90 truncate font-medium">
+                <div className="text-[8px] sm:text-xs opacity-90 truncate font-medium">
                   {occurrence.childName}
                 </div>
-                <div className="text-[9px] sm:text-xs opacity-80 truncate">
+                <div className="text-[8px] sm:text-xs opacity-80 truncate">
                   {timeRange}
                 </div>
                 {occurrence.location && (
-                  <div className="text-[9px] sm:text-xs opacity-75 truncate mt-0.5 sm:mt-1">
+                  <div className="text-[8px] sm:text-xs opacity-75 truncate mt-0.5">
                     📍 {occurrence.location}
                   </div>
                 )}
-                <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 text-[9px] sm:text-xs opacity-70 font-medium">
+                <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 text-[8px] sm:text-xs opacity-70 font-medium">
                   {duration}m
                 </div>
-              </>
+              </div>
             )}
             
             {/* Show minimal content in continuation segments */}
             {!isFirst && (
-              <div className="text-[9px] sm:text-xs opacity-75 truncate">
+              <div className="text-[8px] sm:text-xs opacity-75 truncate">
                 ↓ {occurrence.title}
               </div>
             )}
@@ -163,4 +203,16 @@ export const ActivityBlock: React.FC<ActivityBlockProps> = ({
       })}
     </>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function for React.memo
+  // Only re-render if these props change
+  return (
+    prevProps.occurrence.activityId === nextProps.occurrence.activityId &&
+    prevProps.occurrence.startDateTime.getTime() === nextProps.occurrence.startDateTime.getTime() &&
+    prevProps.occurrence.endDateTime.getTime() === nextProps.occurrence.endDateTime.getTime() &&
+    prevProps.occurrence.childColor === nextProps.occurrence.childColor &&
+    prevProps.occurrence.title === nextProps.occurrence.title &&
+    prevProps.layout?.segments.length === nextProps.layout?.segments.length &&
+    prevProps.layout?.isOverflow === nextProps.layout?.isOverflow
+  );
+});

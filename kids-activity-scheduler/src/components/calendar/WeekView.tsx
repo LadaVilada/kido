@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { ActivityOccurrence, DAYS_OF_WEEK } from '@/types';
 import { 
   getWeekStartDate, 
@@ -11,7 +11,24 @@ import {
 import { ActivityBlock } from './ActivityBlock';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { 
+  detectOverlaps, 
+  calculateLayout, 
+  getActivityLayout,
+  getAllOverflowActivities,
+  ActivityLayout 
+} from '@/lib/calendarLayout';
+import { useDebouncedCallback } from '@/hooks/useDebounce';
 
+/**
+ * Props for the WeekView component
+ * 
+ * @property occurrences - Array of activity occurrences to display in the week
+ * @property onActivityClick - Optional callback when an activity is clicked
+ * @property currentDate - Optional date to determine which week to display (defaults to today)
+ * @property onDateChange - Optional callback when the displayed week changes
+ * @property className - Optional additional CSS classes
+ */
 interface WeekViewProps {
   occurrences: ActivityOccurrence[];
   onActivityClick?: (occurrence: ActivityOccurrence) => void;
@@ -20,6 +37,30 @@ interface WeekViewProps {
   className?: string;
 }
 
+/**
+ * WeekView Component
+ * 
+ * Displays a weekly calendar view with automatic overlap detection and side-by-side layout
+ * for concurrent activities.
+ * 
+ * Features:
+ * - Automatic overlap detection per day
+ * - Side-by-side layout for up to 4 concurrent activities
+ * - "+N more" indicator for overflow activities (more than 4)
+ * - Horizontal scroll on mobile for overlapping activities
+ * - Current time indicator (red line)
+ * - Week navigation (previous/next/today)
+ * - Responsive design (mobile/tablet/desktop)
+ * - Performance optimized with memoization
+ * 
+ * @example
+ * <WeekView
+ *   occurrences={activities}
+ *   onActivityClick={handleActivityClick}
+ *   currentDate={new Date()}
+ *   onDateChange={handleDateChange}
+ * />
+ */
 export const WeekView: React.FC<WeekViewProps> = ({
   occurrences,
   onActivityClick,
@@ -28,6 +69,23 @@ export const WeekView: React.FC<WeekViewProps> = ({
   className = '',
 }) => {
   const [selectedWeek, setSelectedWeek] = useState(() => getWeekStartDate(currentDate));
+  const [windowWidth, setWindowWidth] = useState(() => 
+    typeof window !== 'undefined' ? window.innerWidth : 1024
+  );
+
+  // Debounced window resize handler
+  const handleResize = useDebouncedCallback(() => {
+    setWindowWidth(window.innerWidth);
+  }, 150);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [handleResize]);
 
   // Calculate week dates
   const weekStart = useMemo(() => getWeekStartDate(selectedWeek), [selectedWeek]);
@@ -51,6 +109,28 @@ export const WeekView: React.FC<WeekViewProps> = ({
     return groupOccurrencesByDate(occurrences);
   }, [occurrences]);
 
+  // Calculate layouts for each day
+  const layoutsByDate = useMemo(() => {
+    const layouts = new Map<string, ActivityLayout[]>();
+    
+    occurrencesByDate.forEach((dayOccurrences, dateKey) => {
+      if (dayOccurrences.length === 0) {
+        layouts.set(dateKey, []);
+        return;
+      }
+      
+      // Detect overlaps for this day
+      const overlapGroups = detectOverlaps(dayOccurrences);
+      
+      // Calculate layout with max 4 columns
+      const dayLayouts = calculateLayout(overlapGroups, 4);
+      
+      layouts.set(dateKey, dayLayouts);
+    });
+    
+    return layouts;
+  }, [occurrencesByDate]);
+
   // Time slots for the grid (6 AM to 10 PM)
   const timeSlots = useMemo(() => {
     const slots = [];
@@ -64,7 +144,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
     return slots;
   }, []);
 
-  const navigateWeek = (direction: 'prev' | 'next') => {
+  const navigateWeek = useCallback((direction: 'prev' | 'next') => {
     const newWeek = new Date(selectedWeek);
     newWeek.setDate(newWeek.getDate() + (direction === 'next' ? 7 : -7));
     setSelectedWeek(newWeek);
@@ -72,16 +152,16 @@ export const WeekView: React.FC<WeekViewProps> = ({
     if (onDateChange) {
       onDateChange(newWeek);
     }
-  };
+  }, [selectedWeek, onDateChange]);
 
-  const goToToday = () => {
+  const goToToday = useCallback(() => {
     const today = new Date();
     setSelectedWeek(getWeekStartDate(today));
     
     if (onDateChange) {
       onDateChange(today);
     }
-  };
+  }, [onDateChange]);
 
   const formatWeekRange = () => {
     const startMonth = weekStart.toLocaleDateString('en-US', { month: 'short' });
@@ -97,7 +177,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
     }
   };
 
-  const getActivityPosition = (occurrence: ActivityOccurrence) => {
+  const getActivityPosition = useCallback((occurrence: ActivityOccurrence) => {
     const startMinutes = occurrence.startDateTime.getHours() * 60 + occurrence.startDateTime.getMinutes();
     const endMinutes = occurrence.endDateTime.getHours() * 60 + occurrence.endDateTime.getMinutes();
     
@@ -114,7 +194,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
       top: `${top}%`,
       height: `${height}%`,
     };
-  };
+  }, []);
 
   const isToday = (date: Date) => {
     const today = new Date();
@@ -122,18 +202,18 @@ export const WeekView: React.FC<WeekViewProps> = ({
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border ${className}`}>
+    <div className={`bg-white rounded-lg shadow-sm border calendar-mobile-compact ${className}`}>
       {/* Header with navigation */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 border-b gap-3 sm:gap-0">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 sm:p-4 border-b gap-2 sm:gap-0">
         <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 flex-1 sm:flex-none">
+          <h2 className="text-sm sm:text-lg font-semibold text-gray-900 flex-1 sm:flex-none">
             {formatWeekRange()}
           </h2>
           <Button
             variant="outline"
             size="sm"
             onClick={goToToday}
-            className="text-xs sm:text-sm touch-target"
+            className="text-xs sm:text-sm touch-target px-2 sm:px-3"
           >
             Today
           </Button>
@@ -164,15 +244,15 @@ export const WeekView: React.FC<WeekViewProps> = ({
       {/* Calendar grid - horizontal scroll on mobile */}
       <div className="overflow-x-auto smooth-scroll">
         <div className="flex min-w-max sm:min-w-0">
-          {/* Time column */}
-          <div className="w-12 sm:w-16 border-r flex-shrink-0">
-            <div className="h-10 sm:h-12 border-b"></div> {/* Header spacer */}
+          {/* Time column - sticky on scroll */}
+          <div className="w-10 sm:w-16 border-r flex-shrink-0 sticky left-0 bg-white z-20">
+            <div className="h-8 sm:h-12 border-b"></div> {/* Header spacer */}
             {timeSlots.map((slot) => (
               <div
                 key={slot.hour}
-                className="h-12 sm:h-16 border-b border-gray-100 flex items-start justify-end pr-1 sm:pr-2 pt-1"
+                className="time-slot h-12 sm:h-16 border-b border-gray-100 flex items-start justify-end pr-0.5 sm:pr-2 pt-1"
               >
-                <span className="text-[10px] sm:text-xs text-gray-500 font-medium">
+                <span className="time-label text-[9px] sm:text-xs text-gray-500 font-medium">
                   {slot.label}
                 </span>
               </div>
@@ -180,20 +260,20 @@ export const WeekView: React.FC<WeekViewProps> = ({
           </div>
 
           {/* Days columns */}
-          <div className="flex-1 grid grid-cols-7 min-w-[600px] sm:min-w-0">
+          <div className="flex-1 grid grid-cols-7 min-w-[560px] sm:min-w-0">
             {weekDays.map((day, dayIndex) => {
               const dayKey = day.toDateString();
               const dayOccurrences = occurrencesByDate.get(dayKey) || [];
               const dayOfWeek = DAYS_OF_WEEK[day.getDay()];
 
               return (
-                <div key={dayKey} className="border-r last:border-r-0 min-w-[80px] sm:min-w-0">
+                <div key={dayKey} className="border-r last:border-r-0 min-w-[70px] sm:min-w-0">
                   {/* Day header */}
                   <div className={`
-                    h-10 sm:h-12 border-b flex flex-col items-center justify-center px-1
+                    day-header h-8 sm:h-12 border-b flex flex-col items-center justify-center px-0.5 sm:px-1
                     ${isToday(day) ? 'bg-blue-50' : ''}
                   `}>
-                    <div className="text-[10px] sm:text-xs text-gray-500 font-medium">
+                    <div className="text-[9px] sm:text-xs text-gray-500 font-medium">
                       {dayOfWeek.short}
                     </div>
                     <div className={`
@@ -204,44 +284,68 @@ export const WeekView: React.FC<WeekViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Day content */}
-                  <div className="relative" style={{ height: `${timeSlots.length * (window.innerWidth < 640 ? 48 : 64)}px` }}>
-                    {/* Hour lines */}
-                    {timeSlots.map((slot, index) => (
-                      <div
-                        key={slot.hour}
-                        className="absolute w-full border-b border-gray-100"
-                        style={{ top: `${index * (window.innerWidth < 640 ? 48 : 64)}px`, height: window.innerWidth < 640 ? '48px' : '64px' }}
-                      />
-                    ))}
-
-                    {/* Activities */}
-                    {dayOccurrences.map((occurrence, index) => {
-                      const position = getActivityPosition(occurrence);
-                      
-                      return (
+                  {/* Day content - scrollable on mobile when activities overlap */}
+                  <div className="calendar-day-column relative overflow-x-auto smooth-scroll" style={{ height: `${timeSlots.length * (windowWidth < 640 ? 48 : 64)}px` }}>
+                    <div className="relative min-w-full" style={{ width: 'max-content' }}>
+                      {/* Hour lines */}
+                      {timeSlots.map((slot, index) => (
                         <div
-                          key={`${occurrence.activityId}-${index}`}
-                          className="absolute left-0.5 right-0.5 sm:left-1 sm:right-1 z-10"
-                          style={{
-                            top: position.top,
-                            height: position.height,
-                            minHeight: '28px',
-                          }}
-                        >
-                          <ActivityBlock
-                            occurrence={occurrence}
-                            onClick={onActivityClick}
-                            className="h-full"
+                          key={slot.hour}
+                          className="absolute w-full border-b border-gray-100"
+                          style={{ top: `${index * (windowWidth < 640 ? 48 : 64)}px`, height: windowWidth < 640 ? '48px' : '64px' }}
+                        />
+                      ))}
+
+                      {/* Activities */}
+                      {dayOccurrences.map((occurrence, index) => {
+                        const position = getActivityPosition(occurrence);
+                        const dayLayouts = layoutsByDate.get(dayKey) || [];
+                        const activityLayout = getActivityLayout(occurrence.activityId, dayLayouts);
+                        
+                        // Skip overflow activities (they'll be shown in the "+N more" indicator)
+                        if (activityLayout?.isOverflow) {
+                          return null;
+                        }
+                        
+                        return (
+                          <div
+                            key={`${occurrence.activityId}-${index}`}
+                            className="absolute left-0.5 right-0.5 sm:left-1 sm:right-1 z-10"
+                            style={{
+                              top: position.top,
+                              height: position.height,
+                              minHeight: '28px',
+                            }}
+                          >
+                            <ActivityBlock
+                              occurrence={occurrence}
+                              onClick={onActivityClick}
+                              className="activity-block h-full"
+                              layout={activityLayout}
+                            />
+                          </div>
+                        );
+                      })}
+
+                      {/* Current time indicator */}
+                      {isToday(day) && (
+                        <CurrentTimeIndicator />
+                      )}
+                    </div>
+                    
+                    {/* Overflow indicator at bottom of day column */}
+                    {(() => {
+                      const dayLayouts = layoutsByDate.get(dayKey) || [];
+                      const overflowActivities = getAllOverflowActivities(dayLayouts, dayOccurrences);
+                      return overflowActivities.length > 0 ? (
+                        <div className="px-0.5 sm:px-1 py-1 border-t border-gray-200">
+                          <OverflowIndicator 
+                            count={overflowActivities.length}
+                            activities={overflowActivities}
                           />
                         </div>
-                      );
-                    })}
-
-                    {/* Current time indicator */}
-                    {isToday(day) && (
-                      <CurrentTimeIndicator />
-                    )}
+                      ) : null;
+                    })()}
                   </div>
                 </div>
               );
@@ -254,7 +358,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
 };
 
 // Current time indicator component
-const CurrentTimeIndicator: React.FC = () => {
+const CurrentTimeIndicator: React.FC = React.memo(() => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   React.useEffect(() => {
@@ -286,4 +390,78 @@ const CurrentTimeIndicator: React.FC = () => {
       <div className="flex-1 h-0.5 bg-red-500"></div>
     </div>
   );
-};
+});
+
+// Overflow indicator component
+interface OverflowIndicatorProps {
+  count: number;
+  activities: ActivityOccurrence[];
+  onClick?: () => void;
+}
+
+const OverflowIndicator: React.FC<OverflowIndicatorProps> = React.memo(({ count, activities, onClick }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  if (count === 0) return null;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onClick) {
+      onClick();
+    } else {
+      setShowTooltip(!showTooltip);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={handleClick}
+        className="
+          overflow-indicator w-full px-1.5 sm:px-2 py-1.5 sm:py-1 text-[10px] sm:text-xs font-medium 
+          text-blue-600 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 
+          rounded border border-blue-200 transition-colors duration-150 
+          touch-target min-h-[44px]
+        "
+        title={`${count} more ${count === 1 ? 'activity' : 'activities'}`}
+      >
+        +{count} more
+      </button>
+      
+      {showTooltip && (
+        <div 
+          className="
+            absolute bottom-full left-0 right-0 mb-1 p-2 bg-white rounded shadow-lg 
+            border border-gray-200 z-30 max-h-48 overflow-y-auto text-left
+          "
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="text-xs font-semibold text-gray-700 mb-1">
+            Additional Activities:
+          </div>
+          {activities.map((activity, index) => (
+            <div 
+              key={`${activity.activityId}-${index}`}
+              className="text-xs text-gray-600 py-1 border-b last:border-b-0"
+            >
+              <div className="font-medium">{activity.title}</div>
+              <div className="text-gray-500">{activity.childName}</div>
+            </div>
+          ))}
+          <button
+            onClick={() => setShowTooltip(false)}
+            className="mt-2 text-xs text-blue-600 hover:text-blue-800 touch-target"
+          >
+            Close
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  // Only re-render if count or activities length changes
+  return (
+    prevProps.count === nextProps.count &&
+    prevProps.activities.length === nextProps.activities.length
+  );
+});
