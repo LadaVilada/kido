@@ -94,11 +94,12 @@ export class ActivitiesService {
     childId: string
   ): Promise<Activity[]> {
     try {
-      // Verify child belongs to user
+      // Verify child exists
       const child = await ChildrenService.getChild(childId);
-      if (!child || child.userId !== userId) {
-        throw new Error('Child not found or access denied');
+      if (!child) {
+        throw new Error('Child not found');
       }
+      // Note: Family membership validation is handled by Firestore security rules
 
       const allActivities = await this.getActivitiesByUser(userId);
       return allActivities.filter(activity => activity.childId === childId);
