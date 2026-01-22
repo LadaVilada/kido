@@ -1,7 +1,8 @@
 import { Activity, Child, ActivityOccurrence } from '@/types';
 
 /**
- * Creates a Date object in a specific timezone
+ * Creates a Date object with the specified time
+ * Simplified version that uses local timezone
  */
 export const createDateTimeInTimezone = (
   date: Date,
@@ -9,38 +10,10 @@ export const createDateTimeInTimezone = (
   minute: number,
   timezone: string
 ): Date => {
-  try {
-    // Create a date string in the format YYYY-MM-DD HH:MM
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hourStr = String(hour).padStart(2, '0');
-    const minuteStr = String(minute).padStart(2, '0');
-    
-    // Create a date/time in the specified timezone using Intl.DateTimeFormat
-    // This approach creates a date that represents the correct moment in time
-    // for the specified timezone
-    const dateTimeString = `${year}-${month}-${day} ${hourStr}:${minuteStr}:00`;
-    
-    // Use a more robust timezone conversion approach
-    // Create a date assuming it's in the target timezone, then adjust for the actual timezone offset
-    const targetDate = new Date(`${year}-${month}-${day}T${hourStr}:${minuteStr}:00`);
-    
-    // Get the timezone offset for the target timezone at this date
-    const targetTimezoneOffset = getTimezoneOffset(targetDate, timezone);
-    const localTimezoneOffset = targetDate.getTimezoneOffset();
-    
-    // Calculate the difference and adjust the date
-    const offsetDifference = (localTimezoneOffset - targetTimezoneOffset) * 60 * 1000;
-    const adjustedDate = new Date(targetDate.getTime() + offsetDifference);
-    
-    return adjustedDate;
-  } catch (error) {
-    // Fallback to local timezone if timezone parsing fails
-    const localDate = new Date(date);
-    localDate.setHours(hour, minute, 0, 0);
-    return localDate;
-  }
+  // Create a new date object with the same date but specified time
+  const result = new Date(date);
+  result.setHours(hour, minute, 0, 0);
+  return result;
 };
 
 /**
