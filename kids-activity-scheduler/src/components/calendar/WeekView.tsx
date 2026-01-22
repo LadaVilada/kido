@@ -186,8 +186,8 @@ export const WeekView: React.FC<WeekViewProps> = ({
     const gridEndMinutes = 22 * 60; // 10 PM
     const totalGridMinutes = gridEndMinutes - gridStartMinutes;
     
-    // Calculate the slot height based on window width
-    const slotHeight = windowWidth < 640 ? 48 : 64;
+    // Calculate the slot height based on window width - increased for better visibility
+    const slotHeight = windowWidth < 640 ? 60 : 80;
     const totalSlots = 17; // 6 AM to 10 PM = 17 hours
     const totalHeight = totalSlots * slotHeight;
     
@@ -258,7 +258,7 @@ export const WeekView: React.FC<WeekViewProps> = ({
             {timeSlots.map((slot) => (
               <div
                 key={slot.hour}
-                className="time-slot h-12 sm:h-16 border-b border-gray-100 flex items-start justify-end pr-0.5 sm:pr-2 pt-1"
+                className="time-slot h-15 sm:h-20 border-b border-gray-100 flex items-start justify-end pr-0.5 sm:pr-2 pt-1"
               >
                 <span className="time-label text-[9px] sm:text-xs text-gray-500 font-medium">
                   {slot.label}
@@ -293,14 +293,14 @@ export const WeekView: React.FC<WeekViewProps> = ({
                   </div>
 
                   {/* Day content - scrollable on mobile when activities overlap */}
-                  <div className="calendar-day-column relative overflow-x-auto smooth-scroll" style={{ height: `${timeSlots.length * (windowWidth < 640 ? 48 : 64)}px` }}>
+                  <div className="calendar-day-column relative overflow-x-auto smooth-scroll" style={{ height: `${timeSlots.length * (windowWidth < 640 ? 60 : 80)}px` }}>
                     <div className="relative min-w-full" style={{ width: 'max-content' }}>
                       {/* Hour lines */}
                       {timeSlots.map((slot, index) => (
                         <div
                           key={slot.hour}
                           className="absolute w-full border-b border-gray-100"
-                          style={{ top: `${index * (windowWidth < 640 ? 48 : 64)}px`, height: windowWidth < 640 ? '48px' : '64px' }}
+                          style={{ top: `${index * (windowWidth < 640 ? 60 : 80)}px`, height: windowWidth < 640 ? '60px' : '80px' }}
                         />
                       ))}
 
