@@ -198,9 +198,6 @@ export const WeekView: React.FC<WeekViewProps> = ({
     const topPx = Math.max(0, (minutesFromStart / totalGridMinutes) * totalHeight);
     const heightPx = Math.max(28, (durationMinutes / totalGridMinutes) * totalHeight);
     
-    // Debug logging
-    console.log(`Position for ${occurrence.title}: startMinutes=${startMinutes}, top=${topPx}px, height=${heightPx}px`);
-    
     return {
       top: `${topPx}px`,
       height: `${heightPx}px`,
